@@ -1,0 +1,230 @@
+{%- comment -%}
+Outfit Builder catalog export. Section Rendering API endpoint — fetched by
+assets/outfit-builder-engine.js as JSON (?section_id=outfit-builder-data,
+plus &page=N for N > 1). Only IN-STOCK variants are exported. Clothing and
+shoes also need at least one occasion: tag; purses and accessories don't
+(the engine infers their occasions from the style in the title).
+Unpriced guard (2026-10-11): a variant priced at 0 means "not priced yet" in
+this catalogue and is never exported, so the builder cannot add a $0.00 piece.
+Paging: collections.all paginates at 250 products. The <script> tag carries
+data-pages="{{ paginate.pages }}" and the engine fetches every page, so the
+export no longer silently drops products past #250 (the store passed 250
+products on 2026-10-03).
+Bundle guard: only two groups of product types are exported —
+core  (bundle_types): clothing + shoes in "Outfit Bundle Eligible"
+(gid://shopify/Collection/491236458658).
+addon (addon_types): purses + accessories in "Outfit Add-ons"
+(gid://shopify/Collection/491238260898).
+The tiered "Outfit Bundle" discounts (10% at 3+, 15% at 5+, 20% at 9+) apply to both.
+KEEP both lists IN SYNC with those collections' TYPE rules (and
+bundle_types with sections/main-cart.liquid). The collections aren't
+published to the Online Store channel, so Liquid can't read their
+membership directly — hence the mirrored lists.
+Slot "bucket" assignment:
+- Handbags, or add-ons titled bag/duffel/tote/purse/clutch -> "bag"
+- belts, sashes, waist/body chains                        -> "waist"
+(the engine only offers a belt with a bottom that has belt loops)
+- other add-ons (jewelry, scarves, hair accessories)      -> "accessory"
+- Dresses / Sets                       -> "look"   (a complete single item)
+- Heels / Sandals / Athletic Shoes / Flats / Loafers -> "shoes" (Flats/Loafers added v1.8.1)
+- anything tagged sub:sets / subtype:sets / subtype:active / sub:jumpsuits /
+subtype:jumpsuit (two-piece Gym sets, Jumpsuits, Matching Sets, Rompers,
+Athleisure sets, etc. — regardless of product.type)  -> "look"
+- everything else                      -> "top" / "bottom", using sub:/subtype:
+tags (sub:bodysuits, sub:bras, sub:tanks, sub:crop, sub:blouses,
+subtype:tops for top; sub:pants/jeans/shorts/skirts/leggings/skorts for
+bottom), falling back to product.type for plain Tops/Bottoms.
+Field contract (keep in sync with assets/outfit-builder-engine.js):
+{ id, title, url, image, price, type, bucket, core, addon, lp, mt, occasionTags,
+fa, gal,   (main-photo alt and photo set, only for products with photo-less variants)
+variants: [{ id, size, color, price, image }] }   variant.price is in cents;
+variant.image is that color's own photo (null when the variant has none).
+variant.chip (2026-10-15) is the verified white-background "chip" for that exact variant, read from the
+product metafield bonnamira.chips (JSON keyed by colour value; each entry lists the variant GIDs it covers
+and the Shopify Files URL). null when no chip exists -> engine keeps the normal image/fallback.
+{%- endcomment -%}
+{%- assign bundle_types = "Athleisure|Athletic Shoes|Bodysuits|Bottoms|Denim|Dresses|Enterizos|Flats|Gym|Heels|Jumpsuits|Loafers|Matching Sets|Pants|Sandals|Sets|Skirts|Tops" | split: "|" -%}
+{%- comment -%}
+addon_types mirror the "Outfit Add-ons (Purses & Accessories)" collection
+(gid://shopify/Collection/491238260898). They count toward the 3 pieces
+of the tiered "Outfit Bundle" discounts. They don't need
+occasion: tags — the engine infers occasions from the style in the title.
+{%- endcomment -%}
+{%- assign addon_types = "Handbags|Accessories|Earrings|Bracelets|Necklaces|Rings" | split: "|" -%}
+{%- assign printed_any = false -%}
+{%- paginate collections.all.products by 250 -%}
+<script type="application/json" id="outfit-builder-catalog" data-pages="{{ paginate.pages | default: 1 }}">
+[
+{%- for product in collections.all.products -%}
+{%- assign is_core = false -%}
+{%- assign is_addon = false -%}
+{%- if bundle_types contains product.type -%}{%- assign is_core = true -%}{%- endif -%}
+{%- if addon_types contains product.type -%}{%- assign is_addon = true -%}{%- endif -%}
+{%- unless is_core or is_addon -%}{%- continue -%}{%- endunless -%}
+{%- if product.available == false -%}{%- continue -%}{%- endif -%}
+{%- assign oidx = 0 -%}
+{%- capture occasion_json -%}
+{%- for tag in product.tags -%}
+{%- if tag contains "occasion:" -%}
+{%- unless oidx == 0 -%},{%- endunless -%}
+{{ tag | json }}
+{%- assign oidx = oidx | plus: 1 -%}
+{%- endif -%}
+{%- endfor -%}
+{%- endcapture -%}
+{%- if is_core and oidx == 0 -%}
+{%- continue -%}
+{%- endif -%}
+{%- assign bucket = "" -%}
+{%- assign title_lc = product.title | downcase -%}
+{%- if is_addon -%}
+{%- if product.type == "Handbags" or title_lc contains " bag" or title_lc contains "duffel" or title_lc contains "tote" or title_lc contains "purse" or title_lc contains "clutch" -%}
+{%- assign bucket = "bag" -%}
+{%- elsif title_lc contains "belt" or title_lc contains "sash" or title_lc contains "waist chain" or title_lc contains "body chain" or title_lc contains "belly chain" or title_lc contains "corset" or title_lc contains "cincher" or product.tags contains "sub:belts" -%}
+{%- assign bucket = "waist" -%}
+{%- else -%}
+{%- assign bucket = "accessory" -%}
+{%- endif -%}
+{%- elsif product.type == "Dresses" or product.type == "Sets" -%}
+{%- assign bucket = "look" -%}
+{%- elsif product.type == "Heels" or product.type == "Sandals" or product.type == "Athletic Shoes" or product.type == "Flats" or product.type == "Loafers" -%}
+{%- assign bucket = "shoes" -%}
+{%- else -%}
+{%- for tag in product.tags -%}
+{%- assign t = tag | downcase -%}
+{%- if t == "subtype:sets" or t == "subtype:active" or t == "sub:sets" or t == "subtype:jumpsuit" or t == "sub:jumpsuits" -%}
+{%- assign bucket = "look" -%}
+{%- endif -%}
+{%- endfor -%}
+{%- if bucket == "" -%}
+{%- for tag in product.tags -%}
+{%- assign t = tag | downcase -%}
+{%- if t == "sub:tanks" or t == "sub:crop" or t == "sub:blouses" or t == "subtype:tops" or t == "sub:bras" or t == "sub:bodysuits" -%}
+{%- assign bucket = "top" -%}
+{%- endif -%}
+{%- if t == "sub:pants" or t == "sub:jeans" or t == "sub:shorts" or t == "sub:skirts" or t == "sub:leggings" or t == "sub:skorts" -%}
+{%- assign bucket = "bottom" -%}
+{%- endif -%}
+{%- endfor -%}
+{%- endif -%}
+{%- if bucket == "" and product.type == "Tops" -%}{%- assign bucket = "top" -%}{%- endif -%}
+{%- if bucket == "" and product.type == "Bottoms" -%}{%- assign bucket = "bottom" -%}{%- endif -%}
+{%- endif -%}
+{%- if bucket == "" -%}
+{%- continue -%}
+{%- endif -%}
+{%- comment -%} Figure out which variant option index is Size vs Color {%- endcomment -%}
+{%- assign size_idx = 0 -%}
+{%- assign color_idx = 0 -%}
+{%- for opt in product.options_with_values -%}
+{%- assign opt_name = opt.name | downcase -%}
+{%- if opt_name contains "size" or opt_name contains "talla" -%}
+{%- assign size_idx = forloop.index -%}
+{%- endif -%}
+{%- if opt_name contains "color" or opt_name contains "colour" -%}
+{%- assign color_idx = forloop.index -%}
+{%- endif -%}
+{%- endfor -%}
+{%- if size_idx == 0 and product.options_with_values.size >= 2 -%}{%- assign size_idx = 2 -%}{%- endif -%}
+{%- comment -%}
+Only default color to a fallback index when a SECOND option exists and
+isn't already claimed by size — single-option (size-only) products have
+no color dimension, and color must come out null for them. The engine
+then falls back to colors named in the product title.
+{%- endcomment -%}
+{%- if color_idx == 0 and product.options_with_values.size >= 2 -%}
+{%- for opt in product.options_with_values -%}
+{%- unless forloop.index == size_idx -%}
+{%- assign color_idx = forloop.index -%}
+{%- break -%}
+{%- endunless -%}
+{%- endfor -%}
+{%- endif -%}
+{%- assign size_key = "option" | append: size_idx -%}
+{%- assign color_key = "option" | append: color_idx -%}
+{%- comment -%}
+Belt-loop hint from the description (used for bottoms and looks only):
+"n" = elastic / drawstring / already belted, "y" = says belt loops,
+"h" = button-and-zip or five-pocket waistband. Anything else: no hint.
+{%- endcomment -%}
+{%- assign lp = "" -%}
+{%- if bucket == "bottom" or bucket == "look" -%}
+{%- assign desc_lc = product.description | strip_html | downcase -%}
+{%- if desc_lc contains "belt loop" -%}
+{%- assign lp = "y" -%}
+{%- elsif desc_lc contains "elastic" or desc_lc contains "drawstring" or desc_lc contains "belted" or desc_lc contains "belt included" or desc_lc contains "pull-on" or desc_lc contains "tie waist" or desc_lc contains "tie-waist" -%}
+{%- assign lp = "n" -%}
+{%- elsif bucket == "bottom" -%}
+{%- if desc_lc contains "button-and-zip" or desc_lc contains "button and zip" or desc_lc contains "five-pocket" or desc_lc contains "five pocket" -%}
+{%- assign lp = "h" -%}
+{%- endif -%}
+{%- endif -%}
+{%- endif -%}
+{%- comment -%}
+Variant photo gap: when any in-stock variant has no photo of its own, also
+export the product's photo set (url + alt) and the main photo's alt so the
+engine can pick the photo whose alt names the variant's color. A photo is
+never shown for a color it does not name (engine.resolveVariantImages).
+{%- endcomment -%}
+{%- assign need_gal = false -%}
+{%- if color_idx > 0 -%}
+{%- for variant in product.variants -%}
+{%- if variant.available and variant.price > 0 and variant.featured_image == blank -%}{%- assign need_gal = true -%}{%- break -%}{%- endif -%}
+{%- endfor -%}
+{%- endif -%}
+{%- comment -%} Skip a product with no purchasable (in stock AND priced) variant at all, so it never prints an empty variants list. {%- endcomment -%}
+{%- assign has_buyable = false -%}
+{%- for variant in product.variants -%}
+{%- if variant.available and variant.price > 0 -%}{%- assign has_buyable = true -%}{%- break -%}{%- endif -%}
+{%- endfor -%}
+{%- unless has_buyable -%}{%- continue -%}{%- endunless -%}
+{%- unless printed_any -%}{%- else -%},{%- endunless -%}
+{%- assign printed_any = true -%}
+{
+"id": {{ product.id | json }},
+"title": {{ product.title | json }},
+"url": {{ product.url | json }},
+"image": {{ product.featured_image | image_url: width: 400 | json }},
+"price": {{ product.price | money_without_currency | json }},
+"type": {{ product.type | json }},
+"bucket": {{ bucket | json }},
+"core": {{ is_core | json }},
+"addon": {{ is_addon | json }},
+"lp": {{ lp | json }},
+{%- assign mt = "" -%}
+{%- for tag in product.tags -%}{%- if tag contains "metal:" -%}{%- assign mt = tag | remove: "metal:" -%}{%- endif -%}{%- endfor %}
+"mt": {{ mt | json }},
+{%- comment -%} dc (2026-10-22): dominant colour for multicolour pieces whose title names no colour (metafield bonnamira.dominant). The engine makes it the primary family and multicolor the secondary. {%- endcomment -%}
+"dc": {{ product.metafields.bonnamira.dominant.value | default: "" | json }},
+"occasionTags": [{{ occasion_json }}],
+"fa": {% if need_gal and product.featured_image %}{{ product.featured_image.alt | default: '' | json }}{% else %}""{% endif %},
+"gal": [
+{%- if need_gal -%}
+{%- for img in product.images limit: 16 -%}
+{%- unless forloop.first -%},{%- endunless -%}
+{ "u": {{ img | image_url: width: 400 | json }}, "a": {{ img.alt | default: '' | json }} }
+{%- endfor -%}
+{%- endif -%}
+],
+{%- assign chips = product.metafields.bonnamira.chips.value -%}
+"variants": [
+{%- assign vfirst = true -%}
+{%- for variant in product.variants -%}
+{%- unless variant.available and variant.price > 0 -%}{%- continue -%}{%- endunless -%}
+{%- unless vfirst -%},{%- endunless -%}
+{%- assign vfirst = false -%}
+{
+"id": {{ variant.id | json }},
+"size": {{ variant[size_key] | json }},
+"color": {{ variant[color_key] | json }},
+"price": {{ variant.price | json }},
+"image": {% if variant.featured_image %}{{ variant.featured_image | image_url: width: 400 | json }}{% else %}null{% endif %},
+"chip": {%- assign chip_url = "" -%}{%- if chips -%}{%- assign vgid = "gid://shopify/ProductVariant/" | append: variant.id -%}{%- for pair in chips -%}{%- if pair[1].v contains vgid -%}{%- assign chip_url = pair[1].u -%}{%- break -%}{%- endif -%}{%- endfor -%}{%- endif -%} {% if chip_url != "" %}{{ chip_url | json }}{% else %}null{% endif %}
+}
+{%- endfor -%}
+]
+}
+{%- endfor -%}
+]
+</script>
+{%- endpaginate -%}

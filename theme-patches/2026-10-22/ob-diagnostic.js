@@ -153,13 +153,14 @@ function checkCoverage(OB, raw) {
 
 /* 5. Colour, swatch and chip alignment */
 async function checkColour(OB, cat) {
-  var unmapped = {}, multi = [], viaTitle = [];
+  var unmapped = {}, multi = [], viaTitle = [], noDominant = [];
   cat.forEach(function (p) {
     var seen = {};
     p.variants.forEach(function (v) {
       if (!v.color || seen[v.color]) return; seen[v.color] = 1;
       var fams = OB.variantFamilies(v, p);
       var own = OB.colorFamilies ? OB.colorFamilies(v.color) : fams;
+      if (fams[0] === 'multi') noDominant.push(p.title + ' / ' + v.color);
       if (!fams.length) unmapped[v.color] = (unmapped[v.color] || []).concat(p.title);
       else if (!own.length) viaTitle.push('"' + v.color + '" on ' + p.title + ' -> ' + fams[0] + ' (from the title)');
       if (own.length > 1) multi.push(v.color + ' -> ' + own.join(' + ') + ' (dot: ' + own[0] + ')');
@@ -168,6 +169,7 @@ async function checkColour(OB, cat) {
   var um = Object.keys(unmapped);
   add('Colour', 'Colour names the engine understands', um.length ? 'WARN' : 'PASS', um.length ? um.length + ' colour name(s) have no colour family: no dot colour, never matched by colour' : 'Every colour maps to a family',
     um.map(function (c) { return '"' + c + '" on ' + unmapped[c].slice(0, 2).join('; ') + (unmapped[c].length > 2 ? ' +' + (unmapped[c].length - 2) : ''); }));
+  add('Colour', 'Multicolour pieces have a dominant colour', noDominant.length ? 'WARN' : 'PASS', noDominant.length ? 'Set the product metafield bonnamira.dominant, or name the colour in the title ("... in Black")' : 'Every multicolour piece is filed under its dominant colour, multicolor second', noDominant);
   if (viaTitle.length) add('Colour', 'Colour names read from the title', 'INFO', viaTitle.length + ' colour name(s) carry no colour, so the product title decides', viaTitle);
   var uniqMulti = multi.filter(function (x, i) { return multi.indexOf(x) === i; });
   add('Colour', 'Two-colour names (check the primary)', 'INFO', uniqMulti.length + ' distinct two-colour names; the first colour drives the dot and matching', uniqMulti);

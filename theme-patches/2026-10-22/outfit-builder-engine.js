@@ -301,16 +301,33 @@ var out = hits.sort(function (x, y) { return x.at - y.at || y.len - x.len || x.o
 _famCache[key] = out;
 return out;
 }
+/* Dominant colour rule (2026-10-22): a multicolour piece is filed under its DOMINANT colour first and
+   multicolor second. Dominant = a real colour in the variant name (e.g. "Silver/Multi"), else the product's
+   dominant-colour field (dc, metafield bonnamira.dominant), else the colour after " in " in the title. */
+function titleColorFamilies(product) {
+if (!product) return [];
+var t = String(product.fullTitle || product.title || ''), m = / in ([^|]+)$/i.exec(t);
+var f = m ? colorFamilies(m[1]) : [];
+return f.length ? f : colorFamilies(t);
+}
 function variantFamilies(variant, product) {
 var fams = colorFamilies(variant.color);
-if (!fams.length && product) fams = colorFamilies(product.title);
+if (fams.indexOf('multi') !== -1) {
+var real = fams.filter(function (f) { return f !== 'multi'; });
+if (!real.length && product) {
+real = (product.dc ? colorFamilies(product.dc) : titleColorFamilies(product)).filter(function (f) { return f !== 'multi'; });
+}
+return real.length ? [real[0], 'multi'] : ['multi'];
+}
+if (!fams.length && product && product.dc) fams = colorFamilies(product.dc);
+if (!fams.length && product) fams = titleColorFamilies(product);
 return fams;
 }
 function swatchFor(variant, product) {
 var fams = variant ? variantFamilies(variant, product) : [];
 if (!fams.length) return '#d8cfc2';
 function one(fam) {
-var meta = familyMeta(fam), list = SHADES[fam], text = lc(variant.color), best = null, bestLen = 0;
+var meta = familyMeta(fam), list = SHADES[fam], text = lc(variant.color) + (colorFamilies(variant.color).indexOf(fam) === -1 && product ? ' ' + lc(product.dc || (/ in ([^|]+)$/i.exec(String(product.fullTitle || product.title || '')) || ['', ''])[1]) : ''), best = null, bestLen = 0;
 COLOR_ALIASES.forEach(function (al) { text = text.replace(al[0], al[1]); });
 (list || []).forEach(function (sh, i) { if (i === 1) return; sh.words.forEach(function (w) { if (w.length > bestLen && hasWord(text, [w])) { best = sh; bestLen = w.length; } }); });
 if (!best && list && list[1]) best = list[1];
