@@ -1,0 +1,385 @@
+function paletteText() {
+var hb = heroBucket();
+var parts = [];
+result.order.forEach(function (b) {
+if (b === hb || excluded[b]) return;
+var p = slotProduct(b), v = findVariant(p, picked[b]) || (result.slots[b] && result.slots[b].variant);
+if (!p || !v) return;
+var fam = OB.variantFamilies(v, p)[0];
+if (fam) parts.push(tx('contrast_part', { color: lc(famLabel(fam)), piece: b === 'waist' ? tx('belt_or_sash') : lc(LABELS[b]) }));
+});
+var heroName = answers.finish === 'print' ? (answers.pattern ? lc(patLabel(answers.pattern)) : tx('print_word')) :
+(result.hero && result.hero.fams[0] ? lc(famLabel(result.hero.fams[0])) : '');
+return parts.length && heroName ? tx(hb === 'look' ? 'contrast_look' : 'contrast_top', { hero: heroName, parts: parts.join(', ') }) : '';
+}
+function variantLabel(v) {
+if (v.color && v.size) return v.color + ' / ' + v.size;
+return v.size || v.color || tx('one_option');
+}
+var pickState = {};
+function uniq(p, key) {
+var seen = {}, out = [];
+p.variants.forEach(function (v) { var x = v[key] || ''; if (x && !seen[x]) { seen[x] = true; out.push(x); } });
+return out;
+}
+function selFor(b, p) {
+var v = findVariant(p, picked[b]);
+if (v) { pickState[b] = { pid: p.id, color: v.color || '', size: v.size || '' }; return pickState[b]; }
+var st = pickState[b];
+if (!st || st.pid !== p.id) {
+var sl = result && result.slots[b];
+var sv = sl && sl.primary && sl.primary.id === p.id ? sl.variant : null;
+st = pickState[b] = { pid: p.id, color: (sv && sv.color) || '', size: '' };
+}
+var cs = uniq(p, 'color'), ss = uniq(p, 'size');
+if (cs.length === 1 && !st.color) st.color = cs[0];
+if (ss.length === 1 && !st.size) st.size = ss[0];
+return st;
+}
+function resolveVariant(p, st) {
+var cs = uniq(p, 'color'), ss = uniq(p, 'size');
+if ((cs.length && !st.color) || (ss.length && !st.size)) return null;
+for (var i = 0; i < p.variants.length; i++) {
+var v = p.variants[i];
+if ((v.color || '') === (cs.length ? st.color : (v.color || '')) && (v.size || '') === (ss.length ? st.size : (v.size || ''))) return v;
+}
+return null;
+}
+function pickLabelFor(b) {
+var p = slotProduct(b);
+var sizeK = b === 'shoes' ? 'size_shoe' : 'lbl_size';
+if (!p) return tx(sizeK);
+var st = selFor(b, p);
+var needC = uniq(p, 'color').length && !st.color, needS = uniq(p, 'size').length && !st.size;
+if (needC && needS) return tx(b === 'shoes' ? 'lbl_color_shoe' : 'lbl_color_size');
+if (needC) return tx('lbl_color');
+if (needS) return tx(sizeK);
+return uniq(p, 'size').length ? tx('lbl_size') : tx('lbl_color');
+}
+function needsChoice(b) { var p = slotProduct(b); return p && !excluded[b] && !findVariant(p, picked[b]); }
+function railHtml() {
+return result.order.map(function (b) {
+var p = slotProduct(b);
+var v = p && findVariant(p, picked[b]);
+var status = !p ? tx('nothing_in_stock') : excluded[b] ? tx('left_out') : v ? money(v.price) : tx('choose', { x: lc(pickLabelFor(b)) });
+return '<button type="button" class="ob-win' + (b === selected ? ' is-active' : '') + (excluded[b] ? ' is-excluded' : '') + (needsChoice(b) ? ' needs-choice' : '') + '" data-select="' + b + '" aria-pressed="' + (b === selected) + '">' +
+'<span class="ob-win-img">' + (p && img(p) ? '<img src="' + img(p) + '" alt="" loading="lazy">' : '') + '</span>' +
+'<span class="ob-win-text"><span class="ob-win-label">' + LABELS[b] + '</span>' +
+'<span class="ob-win-title">' + (p ? esc(p.title) : '') + '</span>' +
+'<span class="ob-win-status">' + status + '</span></span></button>';
+}).join('');
+}
+function tileHtml(b, cls) {
+var label = LABELS[b], s = result.slots[b];
+var wrap = function (inner, cap) { return '<div class="ob-tile-wrap ' + cls + '">' + inner + '<p class="ob-tile-cap">' + cap + '</p></div>'; };
+if (!s) return wrap('<div class="ob-tile is-empty is-none"><span class="ob-tile-add">' + (b === 'waist' ? tx('no_belt') : tx('nothing_yet')) + '</span></div>', '<span>' + label + '</span>');
+var p = slotProduct(b), act = b === selected;
+if (!p) {
+if (!optionsFor(b).length) return wrap('<div class="ob-tile is-empty is-none"><span class="ob-tile-add">' + tx('more_soon', { x: lc(TRAY_LABELS[b]) }) + '</span></div>', '<span>' + label + '</span>');
+return wrap('<button type="button" class="ob-tile is-empty' + (act ? ' is-active' : '') + '" data-select="' + b + '"><span class="ob-tile-add"><b aria-hidden="true">+</b>' + tx('add_a', { x: lc(label) }) + '</span></button>', '<span>' + label + '</span>');
+}
+var v = findVariant(p, picked[b]);
+var sv = v || (pickState[b] && pickState[b].pid === p.id && pickState[b].color ? p.variants.filter(function (x) { return x.color === pickState[b].color; })[0] : null) || (s.primary && s.primary.id === p.id ? s.variant : null);
+var lk = !!locked[b];
+var tail = excluded[b] ? tx('left_out') : needsChoice(b) ? '<em class="ob-choose">' + tx('choose', { x: lc(pickLabelFor(b)) }) + '</em>' : money(v ? v.price : minPrice(p));
+return wrap('<div class="ob-tile-box"><button type="button" class="ob-tile' + (isClothing(b) ? ' is-cover' : '') + (act ? ' is-active' : '') + (excluded[b] ? ' is-excluded' : '') + '" data-select="' + b + '" aria-label="' + label + ': ' + esc(p.title) + '"' + (act ? ' aria-pressed="true"' : '') + '>' +
+photoHtml(p, sv) +
+(act ? '<span class="ob-tile-sel">' + tx('selected') + '</span>' : '') +
+'</button>' +
+'<button type="button" class="ob-lock' + (lk ? ' is-on' : '') + '" data-lock="' + b + '" aria-pressed="' + lk + '" aria-label="' + esc(tx(lk ? 'unlock_x' : 'lock_x', { x: lc(label) })) + '">' +
+'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="11" width="14" height="10"' + (lk ? ' fill="currentColor"' : '') + '/><path d="' + (lk ? 'M8 11V7a4 4 0 0 1 8 0v4' : 'M8 11V7a4 4 0 0 1 7.5-2') + '"/></svg></button>' + (lk ? '' : rollBtnHtml(b, label)) + dotsHtml(b, p, sv ? sv.color || '' : '') + '</div>',
+'<span>' + label + '</span><span>' + tail + '</span>');
+}
+function colorVariant(p, c) {
+for (var i = 0; i < p.variants.length; i++) if ((p.variants[i].color || '') === c) return p.variants[i];
+return null;
+}
+var ROLL_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 21v-5h-5"/></svg>';
+function rollBtnHtml(b, label) {
+return '<button type="button" class="ob-roll1" data-reroll-one="' + b + '" aria-label="' + esc(tx('show_another', { x: lc(label) })) + '" title="' + esc(tx('show_another', { x: lc(label) })) + '">' + ROLL_SVG + '</button>';
+}
+function swatchBg(p, v) {
+var fam = v ? OB.variantFamilies(v, p)[0] : '';
+var meta = fam ? OB.COLOR_FAMILIES.filter(function (f) { return f.key === fam; })[0] : null;
+return 'background:' + (OB.swatchFor ? OB.swatchFor(v, p) : (meta ? meta.swatch : '#d8cfc2'));
+}
+function dotsHtml(b, p, cur) {
+var cs = uniq(p, 'color');
+if (cs.length < 2 || excluded[b]) return '';
+return '<div class="ob-cdots" role="group" aria-label="' + esc(tx('colors_of', { label: LABELS[b] })) + '">' + cs.map(function (c) {
+var v = colorVariant(p, c), fam = v ? OB.variantFamilies(v, p)[0] : '';
+var meta = fam ? OB.COLOR_FAMILIES.filter(function (f) { return f.key === fam; })[0] : null;
+var bg = 'background:' + (OB.swatchFor ? OB.swatchFor(v, p) : (meta ? meta.swatch : '#d8cfc2'));
+var on = c === cur;
+return '<button type="button" class="ob-cdot' + (on ? ' is-on' : '') + '" data-tile-color="' + b + '" data-color="' + esc(c) + '" title="' + esc(c) + '" aria-label="' + esc(c) + '" aria-pressed="' + on + '"><i style="' + bg + '"></i></button>';
+}).join('') + '</div>';
+}
+function setPick(pb, kind, value) {
+var pp = slotProduct(pb);
+if (!pp) return;
+var st = selFor(pb, pp);
+st[kind] = value;
+var other = kind === 'color' ? 'size' : 'color';
+var okCombo = pp.variants.some(function (v) { return (v[kind] || '') === value && (!st[other] || (v[other] || '') === st[other]); });
+if (!okCombo) st[other] = '';
+var rv = resolveVariant(pp, st);
+picked[pb] = rv ? rv.id : null;
+if (pb === heroBucket()) restyle();
+addError = '';
+renderSlots();
+}
+function layHtml() {
+var sep = heroBucket() === 'top';
+return '<div class="ob-map' + (sep ? ' is-sep' : '') + '">' +
+'<div class="ob-map-col ob-map-side">' + tileHtml('wrist', 't-sq') + tileHtml('ring', 't-sq') + tileHtml('bag', 't-tall') + '</div>' +
+'<div class="ob-map-col ob-map-mid">' + tileHtml('neck', 't-neck') +
+(sep ? tileHtml('top', 't-top') + tileHtml('bottom', 't-bottom') : tileHtml('look', 't-look')) + tileHtml('shoes', 't-shoes') + '</div>' +
+'<div class="ob-map-col ob-map-side">' + tileHtml('wrist2', 't-sq') + tileHtml('ring2', 't-sq') + tileHtml('waist', 't-tall') + '</div>' +
+'</div>';
+}
+function renderOccasions() {
+var el = $('ob-occ');
+if (!el || !catalog) return;
+var occ = OB.options(catalog, answers, 'occasion');
+el.innerHTML = occ.length > 1 ? '<p class="ob-occ-label">' + tx('change_occasion') + '</p><div class="ob-occ-row">' + occ.map(function (o) {
+return '<button type="button" class="ob-occ-chip' + (o === answers.occasion ? ' is-on' : '') + '" data-occ="' + o + '"' + (o === answers.occasion ? ' aria-pressed="true"' : '') + '>' + (OCC_LABELS[o] || o) + '</button>';
+}).join('') + '</div>' : '';
+}
+function changeOccasion(o) {
+if (!o || o === answers.occasion) return;
+answers.occasion = o;
+var styles = OB.options(catalog, answers, 'style');
+if (styles.indexOf(answers.style) === -1 && styles.length) answers.style = styles[0];
+answers.heroPick = ''; answers.bottomPick = ''; answers.shoeKind = '';
+outfitRolls = 0;
+rebuildKeepingLocks();
+renderSlots();
+}
+$('ob-occ').addEventListener('click', function (e) {
+var c = e.target.closest('[data-occ]');
+if (c) changeOccasion(c.dataset.occ);
+});
+function detailHtml() {
+var b = selected, s = result.slots[b], p = slotProduct(b);
+if (!p) {
+var adds = s ? optionsFor(b) : [];
+if (adds.length) return '<h3 class="ob-det-label">' + LABELS[b] + ' <em>' + tx('optional') + '</em></h3><p class="ob-det-title">' + tx('add_a', { x: lc(LABELS[b]) }) + '</p>' +
+'<p class="ob-swap-label">' + tx('pick_one') + '</p><div class="ob-swap-row">' + adds.map(swapHtml).join('') + '</div>';
+return '<h3 class="ob-det-label">' + LABELS[b] + '</h3><p class="ob-slot-note">' + esc(noteTx(s && s.note) || tx('nothing_for_this')) + '</p>';
+}
+var chosen = findVariant(p, picked[b]);
+var url = p.url + (chosen ? (p.url.indexOf('?') === -1 ? '?' : '&') + 'variant=' + chosen.id : '');
+var price = chosen ? chosen.price : p.variants[0].price;
+var label = pickLabelFor(b);
+var swaps = optionsFor(b).filter(function (q) { return q.id !== p.id; });
+var more = expanded[b] ? '' : '<button type="button" class="ob-more-btn" data-more="' + b + '">' + tx('more_options') + '</button>';
+var oneAdded = pieceAdded[b] === (chosen && chosen.id);
+return (
+'<h3 class="ob-det-label">' + LABELS[b] + (b === 'bag' ? ' <em>' + tx('always_included') + '</em>' : '') + '</h3>' +
+'<p class="ob-det-title">' + esc(p.title) + '</p>' +
+'<p class="ob-det-price">' + money(price) + '</p>' +
+pickersHtml(b, p) +
+'<label class="ob-include"><input type="checkbox" data-include="' + b + '"' + (excluded[b] ? '' : ' checked') + '> ' + tx('in_my_outfit') + '</label>' +
+'<div class="ob-det-actions">' +
+'<button type="button" class="ob-add-one" data-add-one="' + b + '"' + (chosen && !addingOne ? '' : ' disabled') + '>' +
+(oneAdded ? tx('added_check') : chosen ? tx('add_to_bag_price', { price: money(price) }) : tx('choose_to_add', { x: lc(label) })) + '</button>' +
+'<a class="ob-det-link" href="' + url + '">' + tx('view_details') + '</a>' +
+'</div>' +
+(swaps.length || more ? '<p class="ob-swap-label">' + tx('swap_it_for') + '</p><div class="ob-swap-row">' + swaps.map(swapHtml).join('') + more + '</div>' : '')
+);
+}
+function optionsFor(b) {
+var s = result.slots[b], cur = slotProduct(b), seen = {}, list = [];
+var sib = SIBLING[b] && result.slots[SIBLING[b]] && !excluded[SIBLING[b]] ? slotProduct(SIBLING[b]) : null;
+if (sib) seen[sib.id] = true;
+function add(q) { if (q && !seen[q.id]) { seen[q.id] = true; list.push(q); } }
+if (expanded[b]) expanded[b].forEach(add);
+else { add(s && s.primary); ((s && s.alternates) || []).forEach(add); }
+if (cur && !seen[cur.id]) list.unshift(cur);
+return list;
+}
+function minPrice(p) { return p.variants.reduce(function (m, v) { return Math.min(m, v.price); }, p.variants[0].price); }
+function trayHtml() {
+var b = selected, cur = slotProduct(b), list = optionsFor(b);
+var more = expanded[b] ? '' : '<button type="button" class="ob-opt ob-opt-more" data-more="' + b + '"><span>' + tx('more_options') + '</span></button>';
+return '<div class="ob-tray-head">' +
+'<button type="button" class="ob-tray-back" data-tray-close>&lsaquo; ' + tx('all_pieces') + '</button>' +
+'<span class="ob-tray-title">' + TRAY_LABELS[b] + ' <em>' + tx('to_choose_from', { n: list.length }) + '</em></span>' +
+'</div>' +
+(trayNote ? '<p class="ob-tray-note">' + esc(trayNote) + '</p>' : '') +
+'<div class="ob-tray-strip" role="list">' + list.map(function (q) {
+var isCur = cur && q.id === cur.id;
+return '<button type="button" role="listitem" class="ob-opt' + (isCur ? ' is-current' : '') + '"' +
+(isCur ? ' aria-current="true"' : ' data-swap="' + q.id + '"') +
+' aria-label="' + esc(tx(isCur ? 'selected_x' : 'swap_in_x', { t: q.title })) + '">' +
+'<span class="ob-opt-img">' + (img(q) ? '<img src="' + img(q) + '" alt="" loading="lazy">' : '') + (isCur ? '<span class="ob-opt-badge">' + tx('selected') + '</span>' : '') + '</span>' +
+'<span class="ob-opt-title">' + esc(q.title) + '</span>' +
+'<span class="ob-opt-price">' + money(minPrice(q)) + '</span></button>';
+}).join('') + more + '</div>';
+}
+function pickersHtml(b, p) {
+var st = selFor(b, p), cs = uniq(p, 'color'), ss = uniq(p, 'size'), out = '';
+function sel(kind, list, label, cur) {
+var opts = list.map(function (x) {
+var other = kind === 'color' ? st.size : st.color;
+var ok = !other || p.variants.some(function (v) { return (v[kind] || '') === x && (v[kind === 'color' ? 'size' : 'color'] || '') === other; });
+return '<option value="' + esc(x) + '"' + (cur === x ? ' selected' : '') + (ok ? '' : ' disabled') + '>' + esc(kind === 'size' && b === 'shoes' ? sizeText(x, 'shoes') : x) + (ok ? '' : ' ' + tx('unavailable')) + '</option>';
+}).join('');
+return '<label class="ob-pick"><span class="ob-pick-label">' + label + '</span>' +
+'<select class="ob-pick-select' + (cur ? '' : ' is-empty') + '" data-pick-' + kind + '="' + b + '">' +
+(cur ? '' : '<option value="" selected disabled>' + esc(tx('choose', { x: lc(label) })) + '</option>') + opts + '</select></label>';
+}
+if (cs.length > 1 || (cs.length === 1 && ss.length <= 1 && false)) out += sel('color', cs, tx('lbl_color'), st.color);
+else if (cs.length === 1) out += '<p class="ob-pick-fixed"><span class="ob-pick-label">' + tx('lbl_color') + '</span> ' + esc(cs[0]) + '</p>';
+if (ss.length > 1) out += sel('size', ss, b === 'shoes' ? tx('size_shoe') : tx('lbl_size'), st.size);
+else if (ss.length === 1) out += '<p class="ob-pick-fixed"><span class="ob-pick-label">' + (b === 'shoes' ? tx('size_shoe') : tx('lbl_size')) + '</span> ' + esc(b === 'shoes' ? sizeText(ss[0], 'shoes') : ss[0]) + '</p>';
+return '<div class="ob-picks">' + out + '</div>';
+}
+function swapHtml(p) {
+return '<button type="button" class="ob-swap-thumb" data-swap="' + p.id + '" aria-label="' + esc(tx('swap_in_x', { t: p.title })) + '">' +
+(img(p) ? '<img class="ob-swap-thumb-img" src="' + img(p) + '" alt="" loading="lazy">' : '') +
+'<span class="ob-swap-thumb-title">' + esc(p.title) + '</span><span class="ob-swap-thumb-price">' + money(p.variants[0].price) + '</span></button>';
+}
+function renderSlots() {
+railEl.innerHTML = railHtml();
+layEl.innerHTML = layHtml();
+var showTray = trayOpen && isMobile() && !!result.slots[selected];
+var oldStrip = trayEl.querySelector('.ob-tray-strip');
+var prevLeft = oldStrip && trayEl.getAttribute('data-slot') === selected ? oldStrip.scrollLeft : -1;
+trayEl.innerHTML = showTray ? trayHtml() : '';
+trayEl.setAttribute('data-slot', selected);
+boardEl.classList.toggle('is-tray', showTray);
+var strip = trayEl.querySelector('.ob-tray-strip');
+if (strip) {
+if (prevLeft >= 0) strip.scrollLeft = prevLeft;
+else { var curEl = strip.querySelector('.is-current'); if (curEl) strip.scrollLeft = Math.max(0, curEl.offsetLeft - 12); }
+}
+detailEl.innerHTML = detailHtml();
+var act = railEl.querySelector('.is-active');
+if (act && railEl.scrollWidth > railEl.clientWidth) railEl.scrollLeft = Math.max(0, act.offsetLeft - railEl.offsetLeft - 16);
+paletteEl.textContent = paletteText();
+renderSummary();
+if (popB) renderPop();
+saveState();
+}
+function pieces() {
+return result.order.filter(function (b) { return !excluded[b] && slotProduct(b); }).map(function (b) {
+var p = slotProduct(b), v = findVariant(p, picked[b]);
+return { bucket: b, product: p, variant: v, core: !!p.core, addon: !!p.addon, price: v ? v.price : p.variants[0].price };
+});
+}
+function renderSummary() {
+var list = pieces();
+if (!list.length) { summaryEl.innerHTML = '<p class="ob-sum-fine">' + tx('tap_to_add_back') + '</p>'; return; }
+var m = OB.bundleMath(list);
+var missing = list.filter(function (p) { return !p.variant; });
+var head = m.qualifies
+? tx('sum_q', { count: m.count, pct: m.percent }) + (m.nextPercent ? tx('sum_next', { need: m.nextNeeded, next: m.nextPercent }) : '')
+: tx(m.count > 1 ? 'sum_nqn' : 'sum_nq1', { count: m.count, need: m.needed, pct: OB.BUNDLE.tiers[0].percent });
+var CTA_NOUN = { top: 'noun_top', bottom: 'noun_bottom', look: 'noun_dress', shoes: 'noun_shoe', bag: 'noun_purse', neck: 'noun_necklace', wrist: 'noun_bracelet', wrist2: 'noun_bracelet', ring: 'noun_ring', ring2: 'noun_ring', accessory: 'noun_accessory', waist: 'noun_belt' };
+var cta = missing.length ? tx('cta_pick', { noun: tx(CTA_NOUN[missing[0].bucket] || 'noun_piece'), what: lc(pickLabelFor(missing[0].bucket)).replace('shoe size', 'size').replace(' and ', ' & ') })
+: adding ? tx('adding') : tx('add_look');
+var label = adding ? tx('adding') : (doneFlash && !missing.length ? (OBT.added_check || 'Added \u2713') : tx('add_look'));
+var totalHtml = money(m.total) + (m.qualifies ? ' <s>' + money(m.subtotal) + '</s>' : '') + (missing.length ? ' <small>' + tx('est') + '</small>' : '');
+var toast =
+(addError ? '<p class="ob-sum-error" role="alert">' + esc(addError) + '</p>' : '') +
+(addedMsg ? '<div class="ob-sum-added" role="status"><span>' + esc(addedMsg) + '</span><a href="' + CART_URL + '">' + esc((window.BM && BM.t.view_bag) || 'View bag') + '</a><a href="' + rt('checkout') + '">' + esc((window.BM && BM.t.checkout) || 'Checkout') + '</a>' + (recMsg ? '<button type="button" class="ob-sum-recs" data-open-recs>' + esc(tx('more_options')) + ' &rsaquo;</button>' : '') + '</div>' : '');
+var notes =
+(partialMsg() ? '<p class="ob-sum-fine ob-partial" role="status">' + esc(partialMsg()) + '</p>' : '') +
+(m.qualifies ? '<p class="ob-sum-fine">' + tx('discount_fine') + '</p>' : '');
+var btn = summaryEl.querySelector('#ob-add-all');
+if (!btn || !summaryEl.querySelector('.ob-sum-toast')) {
+summaryEl.innerHTML = '<div class="ob-bar"><div class="ob-bar-l"><span class="ob-bar-k"></span><span class="ob-bar-total"></span></div>' +
+'<button type="button" class="ob-add-all metal-fill" id="ob-add-all"></button></div><div class="ob-sum-toast"></div><div class="ob-sum-extra"></div>';
+btn = summaryEl.querySelector('#ob-add-all');
+}
+// patch in place: only touch what changed, so the bar never flashes or re-lays out
+function put(el, html) { if (el && el.__h !== html) { el.__h = html; el.innerHTML = html; } }
+put(summaryEl.querySelector('.ob-bar-k'), missing.length ? cta : head);
+put(summaryEl.querySelector('.ob-bar-total'), totalHtml);
+put(btn, label);
+if (missing.length) btn.setAttribute('data-select', missing[0].bucket); else btn.removeAttribute('data-select');
+btn.disabled = !!adding;
+btn.classList.toggle('is-busy', !!adding);
+btn.classList.toggle('is-done', !!doneFlash && !adding && !missing.length);
+put(summaryEl.querySelector('.ob-sum-toast'), toast);
+put(summaryEl.querySelector('.ob-sum-extra'), notes);
+clearTimeout(toastTimer);
+if (addedMsg && !addError) toastTimer = setTimeout(function () { addedMsg = ''; recMsg = ''; renderSummary(); }, 7000);
+}
+var toastTimer = 0;
+function partialMsg() {
+if (!result || !answers.occasion || answers.occasion === 'casual') return '';
+var need = [heroBucket()].concat(answers.style === 'separates' ? ['bottom'] : [], ['shoes', 'bag']);
+var gone = need.filter(function (b, i) { return need.indexOf(b) === i && result.slots[b] && !optionsFor(b).length; });
+if (!gone.length) return '';
+return tx('partial_note', { occasion: lc(OCC_LABELS[answers.occasion] || answers.occasion.replace('-', ' ')), items: gone.map(function (b) { return lc(TRAY_LABELS[b]); }).join(', ') });
+}
+function postToCart(items) {
+return fetch(rt('cart/add.js'), {
+method: 'POST',
+headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+body: JSON.stringify({ items: items })
+})
+.then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
+.then(function (r) {
+if (!r.ok) throw new Error((r.body && (r.body.description || r.body.message)) || tx('err_add_bag'));
+refreshCartCount();
+return r.body;
+});
+}
+function refreshCartCount() {
+fetch(rt('cart.js'), { headers: { 'Accept': 'application/json' } })
+.then(function (r) { return r.json(); })
+.then(function (c) {
+var n = c && typeof c.item_count === 'number' ? c.item_count : null;
+if (n === null) return;
+Array.prototype.forEach.call(document.querySelectorAll('[data-cart-count]'), function (el) { el.textContent = n; el.hidden = n === 0; });
+document.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart: c } }));
+})
+.catch(function () {});
+}
+function line(p) { return { id: p.variant.id, quantity: 1, properties: { _source: 'outfit-builder' } }; }
+var doneFlash = false, doneTimer = 0;
+function flashDone() { doneFlash = true; clearTimeout(doneTimer); doneTimer = setTimeout(function () { doneFlash = false; renderSummary(); }, 2600); }
+function addOutfit() {
+var list = pieces();
+if (adding || !list.length || list.some(function (p) { return !p.variant; })) return;
+adding = true; addError = ''; addedMsg = ''; renderSummary();
+postToCart(list.map(line))
+.then(function () {
+adding = false;
+list.forEach(function (p) { pieceAdded[p.bucket] = p.variant.id; });
+addedMsg = tx('pieces_added', { n: list.length });
+flashDone();
+renderSlots();
+queueRecs(tx('outfit_added', { n: list.length }));
+})
+.catch(function (err) {
+adding = false;
+addError = (err && err.message ? err.message : tx('err_outfit')) + ' ' + tx('err_outfit_tip');
+renderSummary();
+});
+}
+function addOne(b) {
+var p = slotProduct(b), v = findVariant(p, picked[b]);
+if (!p || !v || addingOne) return;
+addingOne = true; addError = ''; addedMsg = '';
+postToCart([line({ variant: v })])
+.then(function () {
+addingOne = false;
+pieceAdded[b] = v.id;
+addedMsg = tx('piece_added', { label: LABELS[b] });
+renderSlots();
+queueRecs(tx('title_added', { title: p.title }));
+})
+.catch(function (err) {
+addingOne = false;
+addError = (err && err.message ? err.message : tx('err_piece')) + ' ' + tx('err_piece_tip');
+renderSlots();
+});
+}
+var recModal = document.querySelector('[data-post-add-modal]');
+var recList = recModal ? recModal.querySelector('[data-post-add-recs]') : null;
+var recConfirm = recModal ? recModal.querySelector('[data-post-add-confirm]') : null;
+function openModal() {
