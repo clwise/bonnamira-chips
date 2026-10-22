@@ -17,6 +17,10 @@ function add(group, name, status, detail, items) { results.push({ group: group, 
 function pct(a, b) { return b ? Math.round(a / b * 100) + '%' : '0%'; }
 function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 function timeout(p, ms) { return Promise.race([p, sleep(ms).then(function () { throw new Error('timed out after ' + ms + 'ms'); })]); }
+async function confirmBroken(u) {
+  // A first-time image resize can be slow; only call it broken if a direct fetch also fails.
+  try { var r = await timeout(fetch(u, { cache: 'no-store' }), 20000); return !(r.ok && /image/.test(r.headers.get('content-type') || '')); } catch (e) { return true; }
+}
 function loadImg(u) {
   return new Promise(function (res) {
     var i = new Image(), done = false;
@@ -188,7 +192,8 @@ async function checkColour(OB, cat) {
   add('Chips', 'Chip coverage', 'INFO', withChip + ' of ' + cat.length + ' products (' + pct(withChip, cat.length) + ') use chips; ' + chips.length + ' product-colour chips');
   add('Chips', 'Chip covers every size of its colour', partial.length ? 'WARN' : 'PASS', partial.length ? 'Tile and dot can disagree when a size without the chip is picked' : 'No partial chips', partial);
   var ok = await pool(chips, 6, function (x) { return loadImg(String(x.u).split('?')[0] + '?width=120'); });
-  var broken = chips.filter(function (x, i) { return !ok[i]; }).map(function (x) { return x.p.title + ' / ' + x.c + ': ' + x.u; });
+  var cand = chips.filter(function (x, i) { return !ok[i]; }), broken = [];
+  for (var bi = 0; bi < cand.length; bi++) if (await confirmBroken(String(cand[bi].u).split('?')[0] + '?width=120')) broken.push(cand[bi].p.title + ' / ' + cand[bi].c + ': ' + cand[bi].u);
   add('Chips', 'Chip images load', broken.length ? 'FAIL' : 'PASS', broken.length ? broken.length + ' chip image(s) fail to load' : 'All ' + chips.length + ' chip images load', broken);
   return chips;
 }
@@ -203,7 +208,8 @@ async function checkPhotos(cat) {
   });
   var pick = sample(urls, 120);
   var ok = await pool(pick, 6, function (x) { return loadImg(String(x.u).replace(/^\/\//, 'https://')); });
-  var broken = pick.filter(function (x, i) { return !ok[i]; }).map(function (x) { return x.t + ': ' + x.u; });
+  var cand = pick.filter(function (x, i) { return !ok[i]; }), broken = [];
+  for (var bi = 0; bi < cand.length; bi++) if (await confirmBroken(String(cand[bi].u).replace(/^\/\//, 'https://'))) broken.push(cand[bi].t + ': ' + cand[bi].u);
   add('Photos', 'Product photos load (sample of ' + pick.length + ')', broken.length ? 'FAIL' : 'PASS', broken.length ? broken.length + ' broken' : 'All sampled photos load', broken);
   var noPhoto = [];
   cat.forEach(function (p) { var seen = {}; p.variants.forEach(function (v) { if (v.color && !seen[v.color] && !v.image && !v.chip) { seen[v.color] = 1; noPhoto.push(p.title + ' / ' + v.color); } }); });
