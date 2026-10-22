@@ -252,22 +252,36 @@ return first.concat(rest);
 var PICKS = 4; // UI v2 (2026-10-22): 2x2 grid on phones
 var SLIDER = true;
 function wireSlider(grid) {
-var track = grid.querySelector('.ob-track'); if (!track) return;
-var count = grid.querySelector('.ob-slcount b'), btns = grid.querySelectorAll('.ob-slbtn');
-function per() { var c = track.querySelector('.ob-choice'); return c ? Math.max(1, Math.round(track.clientWidth / c.getBoundingClientRect().width)) : 1; }
-function idx() { var c = track.querySelector('.ob-choice'); if (!c) return 0; var w = c.getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || 0); return Math.round(track.scrollLeft / w); }
+/* All state is looked up at call time: other builder sections can re-render the cards, so nothing holds on to an old track. */
+function T() { return grid.querySelector('.ob-track'); }
+function w1(tr) { var c = tr && tr.querySelector('.ob-choice'); return c ? c.getBoundingClientRect().width + parseFloat(getComputedStyle(tr).columnGap || 0) : 1; }
+function per(tr) { var c = tr && tr.querySelector('.ob-choice'); return c ? Math.max(1, Math.round((tr.clientWidth + parseFloat(getComputedStyle(tr).columnGap || 0)) / w1(tr))) : 1; }
+function idx(tr) { return tr ? Math.round(tr.scrollLeft / w1(tr)) : 0; }
 function sync() {
-var i = idx(), total = track.children.length, p = per();
-if (count) count.textContent = p > 1 ? (i + 1) + '–' + Math.min(total, i + p) : (i + 1);
-btns[0].disabled = i <= 0; btns[1].disabled = i + p >= total;
+var tr = T(); if (!tr) return;
+var i = idx(tr), total = tr.children.length, p = per(tr), count = grid.querySelector('.ob-slcount b'), btns = grid.querySelectorAll('.ob-slbtn');
+if (count) count.textContent = p > 1 ? (i + 1) + '\u2013' + Math.min(total, i + p) : (i + 1);
+if (btns[0]) btns[0].disabled = i <= 0;
+if (btns[1]) btns[1].disabled = i + p >= total;
 }
+function goTo(tr, to) { tr.scrollTo({ left: to * w1(tr), behavior: 'smooth' }); }
 function go(dir) {
-var c = track.querySelector('.ob-choice'); if (!c) return;
-var w = c.getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || 0);
-var to = Math.max(0, Math.min(track.children.length - per(), idx() + dir * per())); startI = to; track.scrollTo({ left: to * w, behavior: 'smooth' });
+var tr = T(); if (!tr) return;
+var to = Math.max(0, Math.min(tr.children.length - per(tr), idx(tr) + dir * per(tr)));
+grid._obStart = to; goTo(tr, to);
 }
+function settle() {
+var tr = T(); if (!tr || grid._obTouch) return;
+var p = per(tr), start = grid._obStart || 0, target = Math.round(tr.scrollLeft / w1(tr));
+target = Math.max(start - p, Math.min(start + p, target));
+target = Math.max(0, Math.min(tr.children.length - p, target));
+if (Math.abs(tr.scrollLeft - target * w1(tr)) > 2) goTo(tr, target); else grid._obStart = target;
+sync();
+}
+grid._obStart = 0;
 if (!grid._obSl) {
 grid._obSl = true;
+var tm = 0;
 grid.addEventListener('click', function (e) {
 var b = e.target.closest('[data-slide-step]'); if (!b) return;
 e.preventDefault(); e.stopPropagation(); go(parseInt(b.getAttribute('data-slide-step'), 10));
@@ -275,24 +289,11 @@ e.preventDefault(); e.stopPropagation(); go(parseInt(b.getAttribute('data-slide-
 grid.addEventListener('keydown', function (e) {
 if (e.key === 'ArrowRight') { e.preventDefault(); go(1); } else if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
 });
+grid.addEventListener('scroll', function () { clearTimeout(tm); tm = setTimeout(settle, 140); sync(); }, true);
+grid.addEventListener('touchstart', function () { grid._obTouch = true; grid._obStart = idx(T()); }, { passive: true });
+grid.addEventListener('touchend', function () { grid._obTouch = false; clearTimeout(tm); tm = setTimeout(settle, 140); }, { passive: true });
+window.addEventListener('resize', function () { var tr = T(); if (tr) { tr.scrollLeft = (grid._obStart || 0) * w1(tr); sync(); } });
 }
-/* Snapping is done here, not with CSS scroll-snap (which stuck between cards in testing):
-   when a swipe or wheel scroll settles, glide to the nearest card, at most one page from where the swipe began. */
-var t = 0, startI = 0, touching = false, gliding = false;
-function width1() { var c = track.querySelector('.ob-choice'); return c ? c.getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || 0) : 1; }
-function settle() {
-if (touching) return;
-var w = width1(), p = per(), raw = track.scrollLeft / w, target = Math.round(raw);
-target = Math.max(startI - p, Math.min(startI + p, target));
-target = Math.max(0, Math.min(track.children.length - p, target));
-var left = target * w;
-if (Math.abs(track.scrollLeft - left) > 2) { gliding = true; track.scrollTo({ left: left, behavior: 'smooth' }); }
-else { gliding = false; startI = target; }
-sync();
-}
-track.addEventListener('touchstart', function () { touching = true; startI = idx(); }, { passive: true });
-track.addEventListener('touchend', function () { touching = false; clearTimeout(t); t = setTimeout(settle, 140); }, { passive: true });
-track.addEventListener('scroll', function () { clearTimeout(t); t = setTimeout(settle, 140); }, { passive: true });
 sync(); setTimeout(sync, 300);
 }
 function pageOf(list, n) {
