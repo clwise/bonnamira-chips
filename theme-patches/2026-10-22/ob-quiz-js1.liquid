@@ -177,6 +177,19 @@ if (/sandal|slide|flip.?flop|slipper/.test(t) || ty === 'sandals') return 'sanda
 if (/\bflats?\b|ballet|loafer|oxford/.test(t)) return 'flats';
 return 'heels';
 }
+function shoeThumb(kind) {
+var szShoe = OB.sizeFor(answers, 'shoes'), best = null;
+catalog.forEach(function (p) {
+if (best || p.bucket !== 'shoes' || shoeKind(p) !== kind) return;
+if (szShoe && !p.variants.some(function (v) { return OB.sizeMatches(v, szShoe); })) return;
+if ((p.occasionTags || []).some(function (t) { return t.toLowerCase() === 'occasion:' + answers.occasion; })) best = p;
+});
+if (!best) catalog.forEach(function (p) { if (!best && p.bucket === 'shoes' && shoeKind(p) === kind) best = p; });
+if (!best) return '';
+var v = best.variants.filter(function (x) { return x.chip; })[0] || best.variants[0];
+var u = String((v && v.chip) || (v && v.image) || best.image || '').replace(/^\/\//, 'https://');
+return u ? '<span class="ob-card-img"><img src="' + esc(u.split('?')[0] + '?width=360') + '" alt="" loading="lazy"></span>' : '';
+}
 function shoeKindsAvailable() {
 var allowed = OCC_SHOES[answers.occasion] || ['heels', 'flats', 'sneakers', 'sandals'];
 var szShoe = OB.sizeFor(answers, 'shoes');
@@ -236,10 +249,11 @@ if (!seen[f]) { seen[f] = true; first.push(c); } else rest.push(c);
 });
 return first.concat(rest);
 }
+var PICKS = 4; // UI v2 (2026-10-22): 2x2 grid on phones
 function pageOf(list, n) {
 if (!list.length) return [];
-var start = (n * 3) % list.length, out = [];
-for (var i = 0; i < Math.min(3, list.length); i++) out.push(list[(start + i) % list.length]);
+var start = (n * PICKS) % list.length, out = [];
+for (var i = 0; i < Math.min(PICKS, list.length); i++) out.push(list[(start + i) % list.length]);
 return out;
 }
 /* Flow v2 (2026-10-22): the colour question can pick a print (OB_COLOR_PREFS.print) or rule prints out (noPrints).
@@ -273,6 +287,13 @@ return '<button type="button" class="ob-fchip' + (on ? ' is-on' : '') + '" data-
 return out;
 }
 function OBLANG_ES() { return String((window.Shopify && Shopify.locale) || document.documentElement.lang || 'en').toLowerCase().slice(0, 2) === 'es'; }
+function assignA(o) { var a = {}; Object.keys(answers).forEach(function (k) { a[k] = answers[k]; }); Object.keys(o).forEach(function (k) { a[k] = o[k]; }); return a; }
+function sizeNote(f) {
+var es = OBLANG_ES(), sep = answers.style === 'separates';
+if (f === 'size') return sep ? (es ? 'Para tops' : 'Used for tops') : (es ? 'Para vestidos, sets y tops' : 'Used for dresses, sets and tops');
+if (f === 'sizeBottom') return sep ? (es ? 'Para pantalones, faldas y shorts' : 'Used for pants, skirts and shorts') : (es ? 'Solo si eliges top + parte de abajo' : 'Only if you pick a top + bottom');
+return es ? 'Solo si hay zapatos en tu look' : 'Only if shoes are in your look';
+}
 function heroChoices() { return diversify(OB.candidatesFor(rc(), answers.style === 'separates' ? 'top' : 'look', answers, {})); }
 function chosenHero() {
 var b = answers.style === 'separates' ? 'top' : 'look';
@@ -295,12 +316,20 @@ var hv = hero ? (pickVariant(hero, answers.size) || hero.variants[0]) : null;
 var fams = hv ? OB.variantFamilies(hv, hero) : [];
 return diversify(OB.candidatesFor(rc(), 'bottom', answers, { fams: fams.length ? fams : ['black'], isPrint: !!(hv && OB.variantPattern(hv, hero)), loops: false }));
 }
+function typeTag(p) {
+var es = OBLANG_ES(), t = String(p.type || '').toLowerCase(), b = p.bucket;
+var MAP = es ? { sets: 'Set', 'matching sets': 'Set', dresses: 'Vestido', jumpsuits: 'Enterizo', denim: 'Denim', gym: 'Activo', athleisure: 'Activo', skirts: 'Falda', pants: 'Pantalón', bodysuits: 'Body', tops: 'Top', bottoms: 'Parte de abajo' }
+: { sets: 'Set', 'matching sets': 'Set', dresses: 'Dress', jumpsuits: 'Jumpsuit', denim: 'Denim', gym: 'Active', athleisure: 'Active', skirts: 'Skirt', pants: 'Pants', bodysuits: 'Bodysuit', tops: 'Top', bottoms: 'Bottom' };
+return MAP[t] || (b === 'top' ? MAP.tops : b === 'bottom' ? MAP.bottoms : '');
+}
 function choiceCard(c, kind) {
 var p = c.product;
 var from = p.variants.reduce(function (m, v) { return Math.min(m, v.price); }, p.variants[0].price);
 var tag = kind === 'x-top' ? tx('tag_sep') : (kind === 'x-look' ? tx('tag_dress') : '');
+var ttag = typeTag(p);
 return '<button type="button" class="ob-choice" data-pick="' + kind + '" data-id="' + esc(p.id) + '" data-var="' + esc(c.variant ? c.variant.id : '') + '">' +
 '<span class="ob-choice-img">' + (tag ? '<span class="ob-choice-tag">' + tag + '</span>' : '') + photoHtml(p, c.variant) + '</span>' +
+(ttag ? '<span class="ob-choice-type">' + esc(ttag) + '</span>' : '') +
 '<span class="ob-choice-title">' + esc(p.title) + '</span>' +
 '<span class="ob-choice-price">' + (p.variants.length > 1 ? tx('from_price', { price: money(from) }) : money(from)) + '</span></button>';
 }
@@ -315,10 +344,20 @@ if (x) html[html.length - 1] = choiceCard(x, toStyle === 'separates' ? 'x-top' :
 }
 grid.innerHTML = html.join('');
 var btn = stepsEl.querySelector('[data-reroll="' + rerollKey + '"]');
-if (btn) btn.hidden = cands.length <= 3;
+if (btn) btn.hidden = cands.length <= PICKS;
 setChoiceHint(rerollKey, page.length);
 }
 function setChoiceHint(key, n) {
+if (key === 'hero' || key === 'bottom') {
+var ES2 = OBLANG_ES(), N = (ES2 ? ['Ninguna', 'Una', 'Dos', 'Tres', 'Cuatro'] : ['No', 'One', 'Two', 'Three', 'Four'])[Math.max(0, Math.min(4, n))];
+if (key === 'bottom') { var hb = $('ob-pickbottom-hint'); if (hb) hb.textContent = ES2 ? 'Combinan con tu top.' : 'These go with your top.'; return; }
+var sep2 = answers.style === 'separates', szt = answers.size ? sizeText(answers.size, sep2 ? 'top' : 'look') : '';
+var pat = answers.finish === 'print' ? lc(answers.pattern ? patLabel(answers.pattern) : (ES2 ? 'estampadas' : 'print')) : (answers.finish === 'solid' ? (ES2 ? 'lisas' : 'solid') : '');
+$('ob-pickhero-hint').textContent = ES2
+? N + (n === 1 ? ' opción disponible' : ' opciones disponibles') + (pat ? ' ' + pat : '') + (szt ? ' en talla ' + szt : '') + '.'
+: N + ' in-stock ' + (pat ? pat + ' ' : '') + (n === 1 ? 'pick' : 'picks') + (szt ? ' in size ' + szt : '') + '.';
+return;
+}
 n = Math.max(0, Math.min(3, n));
 if (key === 'hero') {
 var sep = answers.style === 'separates';
@@ -378,10 +417,10 @@ var kinds = shoeKindsAvailable();
 $('ob-shoe-hint').textContent = (SHOE_Q[answers.occasion] ? SHOE_Q[answers.occasion] + ' ' : '') +
 tx(OB.sizeFor(answers, 'shoes') ? 'shoe_hint_size' : 'shoe_hint', { occ: lc(OCC_LABELS[answers.occasion] || answers.occasion.replace('-', ' ')) });
 $('ob-shoe-grid').innerHTML = kinds.map(function (k) {
-return '<button type="button" class="ob-card' + (answers.shoeKind === k.key ? ' is-selected' : '') + '" data-value="' + k.key + '">' +
+return '<button type="button" class="ob-card ob-card-shoe' + (answers.shoeKind === k.key ? ' is-selected' : '') + '" data-value="' + k.key + '">' + shoeThumb(k.key) +
 '<span class="ob-card-title">' + SHOE_LABELS[k.key] + '</span><span class="ob-card-sub">' + SHOE_SUBS[k.key] + ' · ' + tx('in_stock', { n: k.count }) + '</span></button>';
 }).join('') +
-'<button type="button" class="ob-card" data-value=""><span class="ob-card-title">' + tx('surprise') + '</span><span class="ob-card-sub">' + tx('best_match') + '</span></button>';
+'<button type="button" class="ob-card ob-card-surprise" data-value=""><span class="ob-card-title">&#8635; ' + tx('surprise') + '</span><span class="ob-card-sub">' + tx('best_match') + '</span></button>';
 }
 if (step === 'style') {
 var styles = OB.options(catalog, answers, 'style');
@@ -391,7 +430,7 @@ if (step === 'size') {
 var rowsEl = $('ob-sizes-rows');
 var fields = answers.style === 'separates'
 ? [['size', 'top', tx('size_top')], ['sizeBottom', 'bottom', tx('size_bottom')], ['sizeShoe', 'shoes', tx('size_shoe')]]
-: [['size', 'look', tx('size_dress')], ['sizeShoe', 'shoes', tx('size_shoe')]];
+: [['size', 'look', tx('size_dress')]].concat(OB.options(catalog, assignA({ style: '', size: '' }), 'style').indexOf('separates') !== -1 ? [['sizeBottom', 'bottom', tx('size_bottom')]] : []).concat([['sizeShoe', 'shoes', tx('size_shoe')]]);
 var sys = answers.sizeSystem || 'US';
 rowsEl.innerHTML =
 '<div class="ob-size-sys" role="radiogroup" aria-label="' + esc(tx('size_system')) + '">' +
@@ -403,7 +442,7 @@ fields.map(function (f) {
 var list = OB.sizeChoices(catalog, answers, f[1]);
 var cur = answers[f[0]] || '';
 return '<div class="ob-size-row" data-size-row="' + f[0] + '">' +
-'<label class="ob-size-label" for="ob-in-' + f[0] + '">' + f[2] + '</label>' +
+'<label class="ob-size-label" for="ob-in-' + f[0] + '">' + f[2] + '<small class="ob-size-note">' + sizeNote(f[0]) + '</small></label>' +
 '<select class="ob-size-select" id="ob-in-' + f[0] + '" name="' + f[0] + '"' + (list.length ? '' : ' disabled') + '>' +
 '<option value="">' + (list.length ? tx('not_sure') : tx('none_in_stock')) + '</option>' +
 list.map(function (x) { return '<option value="' + esc(x) + '"' + (x === cur ? ' selected' : '') + '>' + esc(sizeText(x, f[1], sys)) + '</option>'; }).join('') +

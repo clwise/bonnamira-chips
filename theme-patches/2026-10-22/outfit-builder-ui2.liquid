@@ -1,0 +1,147 @@
+{%- comment -%}
+  Outfit Builder UI v2 (2026-10-22), from the ChatGPT mockup package "BonnaMira_Outfit_Builder_Visual_Mockups_v2",
+  with these review fixes: 4 picks in a 2x2 grid (no orphan card), one "skip" on the too-much screen, one language
+  on occasion tiles, a bottom-size row when top + bottom is possible, no duplicate sheet title, real catalogue data
+  only, and the add-to-bag bar kept above the phone's safe area.
+  Styling is scoped to #outfit-builder. The small script adds occasion icons and a Lock / Swap / Remove row to the
+  piece sheet (the whole tile is the tap target; the sheet carries the 44px actions).
+{%- endcomment -%}
+{%- assign ob_lang = request.locale.iso_code | slice: 0, 2 -%}
+<style>
+  #outfit-builder { --u-ink: #161310; --u-gold: #f0c75c; --u-line: #b08c3c; --u-label: #8a6d24; --u-cream: #fffaf0; --u-hair: #e3d9c9; --u-muted: #5c5349; }
+  /* step header: gold step label, serif question, no dot row */
+  #outfit-builder .ob-progress { display: none !important; }
+  #outfit-builder .ob-step-label { margin: 18px 0 6px; font: 600 11px/1.3 Inter, sans-serif; letter-spacing: .18em; text-transform: uppercase; color: var(--u-label); }
+  #outfit-builder #ob-steps .ob-q { font-family: var(--font-heading, Fraunces, serif); font-size: clamp(28px, 7.6vw, 34px); line-height: 1.12; font-weight: 500; margin: 0 0 8px; padding: 0; color: var(--u-ink); }
+  #outfit-builder #ob-steps .ob-hint-top { margin: 0 0 16px; font-size: 14px; color: var(--u-muted); }
+
+  /* 1. occasion: 3-across tiles with an icon, one language */
+  #outfit-builder [data-step="occasion"] .ob-grid { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px !important; }
+  #outfit-builder [data-step="occasion"] .ob-chip { display: flex !important; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 8px; min-height: 84px; padding: 12px 10px !important; background: #fff !important; color: var(--u-ink) !important; border: 1px solid var(--u-hair) !important; border-radius: 0 !important; font: 600 14px/1.2 Inter, sans-serif !important; text-align: left; box-shadow: none !important; }
+  #outfit-builder [data-step="occasion"] .ob-chip > span:not(.ob-oi) { display: none !important; }
+  #outfit-builder [data-step="occasion"] .ob-chip .ob-oi { display: block; width: 22px; height: 22px; color: var(--u-line); }
+  #outfit-builder [data-step="occasion"] .ob-chip .ob-oi svg { width: 22px; height: 22px; display: block; }
+  #outfit-builder [data-step="occasion"] .ob-chip:hover, #outfit-builder [data-step="occasion"] .ob-chip.is-selected { border-color: var(--u-line) !important; background: #fdf6e6 !important; }
+
+  /* 4. size */
+  #outfit-builder .ob-size-sys { display: grid !important; grid-template-columns: 1fr 1fr; border: 1px solid var(--u-hair); margin: 4px 0 18px; }
+  #outfit-builder .ob-size-sys-btn { min-height: 46px; border: 0 !important; border-radius: 0 !important; background: #fff !important; color: var(--u-ink) !important; font: 600 14px Inter, sans-serif; }
+  #outfit-builder .ob-size-sys-btn.is-on { background: var(--u-ink) !important; color: var(--u-gold) !important; }
+  #outfit-builder .ob-size-row { display: flex !important; align-items: center; justify-content: space-between; gap: 12px; min-height: 62px; margin: 0 0 10px; padding: 8px 14px; background: #fff; border: 1px solid var(--u-hair); }
+  #outfit-builder .ob-size-label { display: grid; gap: 2px; font: 600 15px Inter, sans-serif; color: var(--u-ink); }
+  #outfit-builder .ob-size-note { font-weight: 400; font-size: 12px; color: var(--u-muted); }
+  #outfit-builder .ob-size-select { flex: 0 0 auto; max-width: 52%; min-height: 44px; border: 0 !important; background-color: transparent !important; font: 600 15px Inter, sans-serif; text-align: right; }
+  #outfit-builder .ob-sizes-go { width: 100%; min-height: 54px; margin-top: 8px; background: var(--u-ink) !important; color: var(--u-gold) !important; border: 1px solid var(--u-line) !important; font: 600 13px Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; }
+
+  /* 5-6. pickers: segmented switch, chip rail, 2x2 photo cards */
+  #outfit-builder .ob-fseg { display: grid !important; grid-template-columns: 1fr 1fr; gap: 0 !important; padding: 0 !important; border: 1px solid var(--u-hair); overflow: visible !important; }
+  #outfit-builder .ob-fseg .ob-fchip { min-height: 46px; border: 0 !important; border-radius: 0 !important; font-size: 14px; }
+  #outfit-builder .ob-frow .ob-fchip { min-height: 40px; border-radius: 0 !important; border-color: var(--u-hair) !important; font-weight: 600; font-size: 12.5px; }
+  #outfit-builder .ob-frow .ob-fchip small { font-weight: 600; }
+  #outfit-builder .ob-fchip.is-on { background: var(--u-ink) !important; color: var(--u-gold) !important; border-color: var(--u-ink) !important; }
+  #outfit-builder .ob-filters { margin: 0 0 14px !important; gap: 10px !important; }
+  #outfit-builder .ob-choices { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
+  @media (min-width: 900px) { #outfit-builder .ob-choices { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; } }
+  #outfit-builder .ob-choice { display: flex !important; flex-direction: column; align-items: stretch; gap: 0; padding: 0 0 10px !important; background: #fff !important; border: 1px solid var(--u-hair) !important; border-radius: 0 !important; text-align: left; }
+  #outfit-builder .ob-choice-img { position: relative; display: block; aspect-ratio: 4 / 5; overflow: hidden; background: #f4ece0; margin: 0 0 8px; }
+  #outfit-builder .ob-choice-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #outfit-builder .ob-choice-type { align-self: flex-start; margin: 0 10px 6px; padding: 2px 6px; border: 1px solid var(--u-line); font: 600 9.5px Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--u-label); }
+  #outfit-builder .ob-choice-title { margin: 0 10px 4px; font: 600 12.5px/1.3 Inter, sans-serif; color: var(--u-ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  #outfit-builder .ob-choice-price { margin: 0 10px; font: 600 13px Inter, sans-serif; color: var(--u-ink); }
+  #outfit-builder .ob-choice:hover, #outfit-builder .ob-choice:focus-visible { border-color: var(--u-ink) !important; outline: none; }
+  #outfit-builder .ob-reroll { min-height: 44px; padding: 10px 6px; background: none !important; border: 0 !important; color: var(--u-ink) !important; font: 600 13px Inter, sans-serif; text-decoration: underline; text-underline-offset: 3px; }
+
+  /* 7. shoes: photo cards + full-width surprise */
+  #outfit-builder #ob-shoe-grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
+  #outfit-builder #ob-shoe-grid .ob-card { display: flex !important; flex-direction: column; align-items: stretch; gap: 4px; padding: 8px 8px 12px !important; background: #fff !important; border: 1px solid var(--u-hair) !important; border-radius: 0 !important; text-align: left; }
+  #outfit-builder #ob-shoe-grid .ob-card-img { display: block; aspect-ratio: 4 / 3; overflow: hidden; background: #f4ece0; margin-bottom: 6px; }
+  #outfit-builder #ob-shoe-grid .ob-card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #outfit-builder #ob-shoe-grid .ob-card-title { font: 600 15px Inter, sans-serif; }
+  #outfit-builder #ob-shoe-grid .ob-card-sub { font-size: 11.5px; color: var(--u-muted); }
+  #outfit-builder #ob-shoe-grid .ob-card.is-selected { border-color: var(--u-line) !important; box-shadow: 0 0 0 1px var(--u-line); }
+  #outfit-builder #ob-shoe-grid .ob-card-surprise { grid-column: 1 / -1; flex-direction: row; justify-content: center; align-items: center; min-height: 50px; padding: 10px !important; border-color: var(--u-line) !important; background: transparent !important; }
+  #outfit-builder #ob-shoe-grid .ob-card-surprise .ob-card-title { color: var(--u-label); font-size: 14px; }
+  #outfit-builder #ob-shoe-grid .ob-card-surprise .ob-card-sub { display: none; }
+
+  /* back link */
+  #outfit-builder .ob-back { min-height: 44px; background: none !important; border: 0 !important; color: var(--u-ink) !important; font: 600 13px Inter, sans-serif; text-decoration: underline; text-underline-offset: 3px; }
+
+  /* 8. results: jewelry prompt as a card; dashed empty tiles */
+  #outfit-builder ~ * .obj, .obj { background: #fdf6e6 !important; border-color: var(--u-line, #b08c3c) !important; }
+  #outfit-builder .ob-tile.is-empty { border: 1px dashed #b08c3c !important; background: #fffaf0 !important; }
+  #outfit-builder .ob-tile-add { color: #8a6d24; font-size: 12px; }
+  #outfit-builder .ob-summary .ob-bar { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important; }
+
+  /* piece sheet: Lock / Swap / Remove as three 44px actions */
+  .ob-pop-trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .ob-pop-trio > * { display: inline-flex !important; align-items: center; justify-content: center; gap: 6px; min-height: 46px; padding: 8px 6px !important; background: #fff !important; color: #161310 !important; border: 1px solid #e3d9c9 !important; border-radius: 0 !important; font: 600 13px Inter, sans-serif !important; text-decoration: none; cursor: pointer; }
+  .ob-pop-trio > [aria-pressed="true"] { background: #161310 !important; color: #f0c75c !important; border-color: #161310 !important; }
+  .ob-pop-trio svg { width: 15px; height: 15px; }
+  .ob-pop-k2 { margin: 6px 0 0; font: 600 11px Inter, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: #8a6d24; }
+</style>
+<script>
+(function () {
+  var ES = {{ ob_lang | json }} === 'es';
+  var I = function (d) { return '<span class="ob-oi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg></span>'; };
+  var ICONS = {
+    casual: I('<path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>'),
+    work: I('<rect x="3" y="7" width="18" height="13"/><path d="M9 7V4h6v3M3 12h18"/>'),
+    brunch: I('<path d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 11h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 3v3M12 3v3"/>'),
+    dinner: I('<path d="M12 3l3.5 9L12 21l-3.5-9z"/>'),
+    clubbing: I('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>'),
+    'after-hours': I('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>'),
+    formal: I('<path d="M12 3l2.4 5.6L20 9.5l-4.3 3.9 1.3 6.1L12 16.6 7 19.5l1.3-6.1L4 9.5l5.6-.9z"/>'),
+    gala: I('<path d="M6 4h12l3 5-9 11L3 9z"/><path d="M3 9h18M9 4l3 5 3-5"/>'),
+    gym: I('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>'),
+    vacation: I('<path d="M3 20h18M7 20l5-14 5 14M9.5 13h5"/>'),
+    beach: I('<circle cx="12" cy="9" r="4"/><path d="M3 18c2 0 2-1.5 4.5-1.5S10 18 12 18s2.5-1.5 4.5-1.5S19 18 21 18"/>')
+  };
+  function decorate() {
+    Array.prototype.forEach.call(document.querySelectorAll('#outfit-builder [data-step="occasion"] .ob-chip'), function (c) {
+      if (c.querySelector('.ob-oi')) return;
+      var ic = ICONS[c.getAttribute('data-value')];
+      if (ic) c.insertAdjacentHTML('afterbegin', ic);
+    });
+  }
+  var T = ES ? { lock: 'Fijar', swap: 'Cambiar', remove: 'Quitar', actions: 'Acciones' } : { lock: 'Lock', swap: 'Swap', remove: 'Remove', actions: 'Piece actions' };
+  var SVG = {
+    lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+    swap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 21v-5h-5"/></svg>',
+    remove: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+  };
+  function slotOfPop() { var t = document.querySelector('#outfit-builder .ob-tile.is-active[data-select]'); return t ? t.getAttribute('data-select') : ''; }
+  function trio() {
+    var pop = document.getElementById('ob-pop'); if (!pop || !pop.classList.contains('is-open')) return;
+    var acts = pop.querySelector('.ob-pop-actions'); if (!acts || acts.querySelector('.ob-pop-trio')) return;
+    var lock = acts.querySelector('[data-pop-lock]'), swap = acts.querySelector('[data-pop-reroll]');
+    if (!lock && !swap) return;
+    var row = document.createElement('div'); row.className = 'ob-pop-trio'; row.setAttribute('role', 'group'); row.setAttribute('aria-label', T.actions);
+    var k = document.createElement('p'); k.className = 'ob-pop-k2'; k.textContent = T.actions;
+    if (lock) { lock.innerHTML = SVG.lock + T.lock; row.appendChild(lock); }
+    if (swap) { swap.innerHTML = SVG.swap + T.swap; row.appendChild(swap); }
+    var slot = slotOfPop();
+    if (slot && slot !== 'look' && slot !== 'top') {
+      var rm = document.createElement('button'); rm.type = 'button'; rm.className = 'ob-pop-btn'; rm.innerHTML = SVG.remove + T.remove;
+      rm.addEventListener('click', function () {
+        var board = document.getElementById('ob-board'); if (!board) return;
+        var chk = document.createElement('input'); chk.type = 'checkbox'; chk.hidden = true; chk.setAttribute('data-include', slot); chk.checked = false;
+        board.appendChild(chk); chk.dispatchEvent(new Event('change', { bubbles: true })); if (chk.parentNode) chk.parentNode.removeChild(chk);
+        var x = document.querySelector('#ob-pop [data-pop-close]'); if (x) x.click();
+      });
+      row.appendChild(rm);
+    }
+    var first = acts.querySelector('.ob-pop-row');
+    acts.insertBefore(row, first); acts.insertBefore(k, row);
+    Array.prototype.forEach.call(acts.querySelectorAll('.ob-pop-row'), function (r) { if (!r.children.length) r.remove(); });
+  }
+  function start() {
+    var root = document.getElementById('outfit-builder'); if (!root) return;
+    decorate();
+    new MutationObserver(function () { decorate(); trio(); }).observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+</script>
+{% schema %}
+{ "name": "Builder UI v2", "settings": [] }
+{% endschema %}

@@ -75,6 +75,39 @@
   #outfit-builder .ob-fchip.is-on { background: #161310; color: #f0c75c; border-color: #161310; }
   #outfit-builder .ob-fchip.is-on small { color: #d9c189; }
   #outfit-builder .ob-fseg .ob-fchip { border-radius: 6px; font-weight: 600; }
+  /* UI v2 (2026-10-22, from the mockup package): full-height bottom sheet, header row, counts, print rail, sticky actions */
+  .obc { align-items: flex-end !important; padding: 0 !important; }
+  .obc-card { width: min(560px, 100%) !important; height: min(94dvh, 900px); max-height: none !important; display: flex; flex-direction: column; padding: 0 !important; border: 0 !important; border-radius: 18px 18px 0 0; overflow: hidden !important; }
+  .obc-card::before { content: ''; display: block; width: 44px; height: 4px; margin: 8px auto 0; border-radius: 2px; background: #d9cdb8; flex: none; }
+  .obc-head { flex: none; display: flex; justify-content: space-between; align-items: center; padding: 2px 12px 2px 16px; border-bottom: 1px solid #e3d9c9; }
+  .obc-x { min-width: 44px; min-height: 44px; border: 0; background: none; font-size: 26px; line-height: 1; color: #161310; cursor: pointer; }
+  .obc-card > .obc-dots, .obc-card > .obc-step, .obc-card > .obc-q, .obc-card > .obc-sub { flex: none; margin-left: 20px !important; margin-right: 20px !important; }
+  .obc-card > .obc-dots { margin-top: 16px; margin-bottom: 10px; } .obc-dots span { height: 3px; }
+  .obc-card > .obc-dots span.is-done { background: #b08c3c; }
+  .obc-q { font-size: 26px !important; }
+  #obc-body { flex: 1 1 auto; overflow-y: auto; padding: 4px 20px 16px; overscroll-behavior: contain; }
+  .obc-card > .obc-foot { display: none !important; }
+  .obc-actions { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid #e3d9c9; background: #fffaf0; }
+  .obc-actions:empty { display: none; }
+  .obc-actions .obc-go { flex: 0 0 58%; min-height: 52px; }
+  .obc-go:disabled { background: #ddd3c2 !important; color: #8a8074 !important; border-color: #ddd3c2 !important; cursor: default; }
+  .obc-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: 4px 6px !important; }
+  .obc-sw { background: transparent !important; border: 0 !important; padding: 6px 2px !important; gap: 3px !important; box-shadow: none !important; }
+  .obc-sw i { width: 32px !important; height: 32px !important; }
+  .obc-sw b { font-size: 11.5px; font-weight: 600; line-height: 1.2; text-align: center; }
+  .obc-sw small { font-size: 10px; color: #8a6d24; }
+  .obc-sw.is-on i { box-shadow: 0 0 0 2px #fffaf0, 0 0 0 4px #161310 !important; }
+  .obc-sw.is-off { opacity: .35; }
+  .obc-rail { display: flex !important; gap: 8px; overflow-x: auto; margin: 0 -20px; padding: 2px 20px 6px; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .obc-rail::-webkit-scrollbar { display: none; }
+  .obc-rail .obc-pr { flex: 0 0 132px; scroll-snap-align: start; padding: 10px 8px; }
+  .obc-pr.is-on { border-color: #b08c3c !important; box-shadow: 0 0 0 2px #b08c3c !important; background: #fdf6e6; }
+  .obc-more { border-color: #b08c3c !important; background: #fffdf7 !important; }
+  .obc-busyrow { display: flex; align-items: center; gap: 14px; width: 100%; margin-top: 14px; padding: 12px 14px; min-height: 56px; background: #fff; border: 1px solid #e3d9c9; cursor: pointer; font: inherit; color: inherit; text-align: left; }
+  .obc-busyrow i { flex: 0 0 34px; height: 34px; border-radius: 50%; }
+  .obc-busyrow b { flex: 1; font-size: 14px; } .obc-busyrow span { font-size: 12px; color: #5c5349; }
+  .obc-busyrow.is-on { border-color: #161310; box-shadow: 0 0 0 2px #161310; }
+  @media (max-width: 420px) { .obc-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; } }
 </style>
 <div class="obc" id="obc" role="dialog" aria-modal="true" aria-labelledby="obc-q" hidden>
   <div class="obc-card">
@@ -109,7 +142,7 @@
     shades: '¿Qué tonos? (opcional, hasta dos)', how: '¿Cómo lo combinamos?', match: 'Combinar', matchSub: 'Todo en la misma familia', contrast: 'Contrastar', contrastSub: 'Colores que resaltan',
     none1: 'Sin preferencia', go: 'Continuar',
     q2: '¿De qué tienes demasiado?', s2: 'Lo dejaremos fuera de tu outfit.', busy: 'Estampados llamativos', none2: 'Nada en particular',
-    back: 'Atrás', skip: 'Omitir colores'
+    back: 'Atrás', skip: 'Omitir colores', close: 'Cerrar', selected: 'seleccionado', families: 'familias', avoid: 'Elige uno para evitar', avoidPat: 'Evitar estampados'
   } : {
     step: function (n) { return 'Color ' + n + ' of 2'; },
     q1: 'What color or print are you in the mood for?', s1: 'Tap one and we’ll build the outfit around it.',
@@ -117,7 +150,7 @@
     shades: 'Which shades? (optional, up to two)', how: 'How should the rest go with it?', match: 'Match', matchSub: 'Same color family, softly layered', contrast: 'Contrast', contrastSub: 'Colors that pop against it',
     none1: 'No preference', go: 'Continue',
     q2: 'Anything you already have too much of?', s2: 'We’ll keep it out of your outfit.', busy: 'Busy prints', none2: 'Nothing in particular',
-    back: 'Back', skip: 'Skip colors'
+    back: 'Back', skip: 'Skip colors', close: 'Close', selected: 'selected', families: 'families', avoid: 'Choose one to avoid', avoidPat: 'Avoid patterns'
   };
   function famName(f) { return ES && FAM_ES[f.key] ? FAM_ES[f.key] : f.label; }
   function shadeName(sh) { return ES && SHADE_ES[sh.label] ? SHADE_ES[sh.label] : sh.label; }
@@ -125,7 +158,7 @@
   var prefs = blank(), saved = null;
   try { saved = JSON.parse(sessionStorage.getItem(KEY) || 'null'); } catch (e) {}
   if (saved) { prefs = Object.assign(blank(), saved); window.OB_COLOR_PREFS = prefs; }
-  var i = 0, pending = null, lastFocus = null, occ = '', printOpts = null, draft = null;
+  var i = 0, pending = null, lastFocus = null, occ = '', printOpts = null, famCounts = null, draft = null;
   var el = function (id) { return document.getElementById(id); };
   var OBf = function () { return window.OutfitBuilder; };
   function fams() { var OB = OBf(); return ((OB && OB.COLOR_FAMILIES) || []).filter(function (f) { return f.key !== 'multi'; }); }
@@ -145,8 +178,16 @@
           t.n += p.products; if (!t.image) t.image = p.image;
         });
       });
+      famCounts = {};
+      cat.forEach(function (p) {
+        if (p.bucket !== 'look' && p.bucket !== 'top') return;
+        var oc = (OB.occasionsOf ? OB.occasionsOf(p) : []) || [];
+        if (occ && oc.indexOf(occ) === -1) return;
+        var seen = {};
+        p.variants.forEach(function (v) { var f = OB.variantFamilies(v, p)[0]; if (f && !seen[f]) { seen[f] = 1; famCounts[f] = (famCounts[f] || 0) + 1; } });
+      });
       printOpts = Object.keys(tally).map(function (k) { return tally[k]; }).sort(function (a, b) { return b.n - a.n; });
-      if (!modal.hidden && i === 0) render();
+      if (!modal.hidden) render();
     });
   }
   function dots() { Array.prototype.forEach.call(el('obc-dots').children, function (d, k) { d.style.display = k < 2 ? '' : 'none'; d.className = k <= i ? 'is-done' : ''; }); }
@@ -154,11 +195,13 @@
     dots();
     el('obc-step').textContent = T.step(i + 1);
     el('obc-back').style.visibility = i ? 'visible' : 'hidden';
-    var body = el('obc-body'), h = '';
+    var body = el('obc-body'), h = '', foot = '';
+    head();
     if (i === 0) {
       el('obc-q').textContent = T.q1; el('obc-sub').textContent = T.s1;
-      h += '<p class="obc-lbl">' + T.colors + '</p><div class="obc-grid">' + fams().map(function (f) {
-        return '<button type="button" class="obc-sw' + (draft.today === f.key ? ' is-on' : '') + '" data-fam="' + f.key + '"><i style="background:' + f.swatch + '"></i>' + esc(famName(f)) + '</button>';
+      var shown = fams().filter(function (f) { return !famCounts || famCounts[f.key] || draft.today === f.key; });
+      h += '<p class="obc-lbl">' + T.colors + ' · ' + (draft.today ? esc(famName(fams().filter(function (f) { return f.key === draft.today; })[0] || { key: '', label: '' })) + ' ' + T.selected : shown.length + ' ' + T.families) + '</p><div class="obc-grid">' + shown.map(function (f) {
+        return '<button type="button" class="obc-sw' + (draft.today === f.key ? ' is-on' : '') + '" data-fam="' + f.key + '"><i style="background:' + f.swatch + '"></i><b>' + esc(famName(f)) + '</b>' + (famCounts ? '<small>' + T.inStock(famCounts[f.key] || 0) + '</small>' : '') + '</button>';
       }).join('') + '</div>';
       if (draft.today) {
         var OB = OBf(), list = (draft.today !== 'black' && OB && OB.SHADES && OB.SHADES[draft.today]) || [];
@@ -172,7 +215,7 @@
       }
       if (printOpts && printOpts.length) {
         var tot = printOpts.reduce(function (s, p) { return s + p.n; }, 0);
-        h += '<p class="obc-lbl">' + T.prints + '</p><div class="obc-prints">' +
+        h += '<p class="obc-lbl">' + T.prints + '</p><div class="obc-prints obc-rail">' +
           '<button type="button" class="obc-pr' + (draft.print === 'any' ? ' is-on' : '') + '" data-print="any"><i class="obc-pr-any">?</i><span><b>' + T.anyPrint + '</b><small>' + T.inStock(tot) + '</small></span></button>' +
           printOpts.map(function (p) {
             var lbl = ES && PAT_ES[p.key] ? PAT_ES[p.key] : ((OBf() && OBf().patternLabel) ? OBf().patternLabel(p.key) : p.key);
@@ -181,17 +224,36 @@
           }).join('') + '</div>';
       }
       var ready = !!(draft.today || draft.print);
-      h += '<div class="obc-foot"><button type="button" class="obc-link" data-none="1">' + T.none1 + '</button><button type="button" class="obc-go" id="obc-go"' + (ready ? '' : ' disabled style="opacity:.45"') + '>' + T.go + '</button></div>';
+      foot = '<button type="button" class="obc-link" data-none="1">' + T.none1 + '</button><button type="button" class="obc-go" id="obc-go"' + (ready ? '' : ' disabled') + '>' + T.go + '</button>';
     } else {
       el('obc-q').textContent = T.q2; el('obc-sub').textContent = T.s2;
-      h = '<div class="obc-grid">' + fams().map(function (f) {
+      h = '<p class="obc-lbl">' + T.avoid + '</p><div class="obc-grid">' + fams().map(function (f) {
         var off = draft.today === f.key;
-        return '<button type="button" class="obc-sw' + (draft.tooMuch === f.key ? ' is-on' : '') + (off ? ' is-off' : '') + '" data-too="' + f.key + '"' + (off ? ' disabled' : '') + '><i style="background:' + f.swatch + '"></i>' + esc(famName(f)) + '</button>';
-      }).join('') +
-      (draft.print ? '' : '<button type="button" class="obc-sw' + (draft.noPrints ? ' is-on' : '') + '" data-too="__prints"><i class="obc-busy"></i>' + T.busy + '</button>') + '</div>' +
-      '<div class="obc-foot" style="justify-content:center"><button type="button" class="obc-link" data-too="">' + T.none2 + '</button></div>';
+        return '<button type="button" class="obc-sw' + (draft.tooMuch === f.key ? ' is-on' : '') + (off ? ' is-off' : '') + '" data-too="' + f.key + '"' + (off ? ' disabled' : '') + '><i style="background:' + f.swatch + '"></i><b>' + esc(famName(f)) + '</b>' + (famCounts ? '<small>' + T.inStock(famCounts[f.key] || 0) + '</small>' : '') + '</button>';
+      }).join('') + '</div>' +
+      (draft.print ? '' : '<button type="button" class="obc-busyrow' + (draft.noPrints ? ' is-on' : '') + '" data-too="__prints"><i class="obc-busy"></i><b>' + T.busy + '</b><span>' + T.avoidPat + '</span></button>');
+      foot = '<button type="button" class="obc-link" data-too="">' + T.none2 + '</button>';
     }
     body.innerHTML = h;
+    el('obc-actions').innerHTML = foot;
+  }
+  function head() {
+    var hd = el('obc-head');
+    if (!hd) {
+      var card = modal.querySelector('.obc-card');
+      hd = document.createElement('div'); hd.id = 'obc-head'; hd.className = 'obc-head';
+      card.insertBefore(hd, card.firstChild);
+      var act = document.createElement('div'); act.id = 'obc-actions'; act.className = 'obc-actions';
+      card.appendChild(act);
+      act.addEventListener('click', function (e) { onPick(e); });
+      hd.addEventListener('click', function (e) {
+        if (e.target.closest('[data-h-skip]')) { draft = blank(); finish(); }
+        else if (e.target.closest('[data-h-back]')) { if (i) { i--; render(); } }
+        else if (e.target.closest('[data-h-x]')) { modal.hidden = true; pending = null; }
+      });
+    }
+    hd.innerHTML = (i ? '<button type="button" class="obc-link" data-h-back>' + T.back + '</button>' : '<button type="button" class="obc-link" data-h-skip>' + T.skip + '</button>') +
+      '<button type="button" class="obc-x" data-h-x aria-label="' + T.close + '">&times;</button>';
   }
   function finish() {
     prefs = draft; save(); modal.hidden = true;
@@ -207,7 +269,7 @@
     if (OBf() && fams().length) go();
     else { var n = 0, t = setInterval(function () { if ((OBf() && fams().length) || ++n > 40) { clearInterval(t); go(); } }, 100); }
   }
-  el('obc-body').addEventListener('click', function (e) {
+  function onPick(e) {
     var b;
     if ((b = e.target.closest('[data-fam]'))) {
       var k = b.getAttribute('data-fam');
@@ -237,7 +299,8 @@
       if (v === '__prints') { draft.noPrints = true; draft.tooMuch = ''; } else { draft.tooMuch = v; draft.noPrints = false; }
       finish(); return;
     }
-  });
+  }
+  el('obc-body').addEventListener('click', onPick);
   el('obc-back').textContent = T.back; el('obc-skip').textContent = T.skip;
   el('obc-back').addEventListener('click', function () { if (i) { i--; render(); } });
   el('obc-skip').addEventListener('click', function () { draft = blank(); finish(); });
