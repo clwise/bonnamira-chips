@@ -28,8 +28,10 @@
   #outfit-builder .ob-size-sys-btn { min-height: 46px; border: 0 !important; border-radius: 0 !important; background: #fff !important; color: var(--u-ink) !important; font: 600 14px Inter, sans-serif; }
   #outfit-builder .ob-size-sys-btn.is-on { background: var(--u-ink) !important; color: var(--u-gold) !important; }
   #outfit-builder .ob-size-row { display: flex !important; align-items: center; justify-content: space-between; gap: 12px; min-height: 62px; margin: 0 0 10px; padding: 8px 14px; background: #fff; border: 1px solid var(--u-hair); }
-  #outfit-builder .ob-size-label { display: grid; gap: 2px; font: 600 15px Inter, sans-serif; color: var(--u-ink); }
-  #outfit-builder .ob-size-note { font-weight: 400; font-size: 12px; color: var(--u-muted); }
+  #outfit-builder .ob-size-label { display: grid; gap: 2px; font: 600 15px Inter, sans-serif; color: var(--u-ink); text-transform: none !important; letter-spacing: 0 !important; }
+  #outfit-builder .ob-size-sys, #outfit-builder .ob-size-sys-btn { border-radius: 0 !important; }
+  #outfit-builder .ob-size-note { font-weight: 400; font-size: 12px; color: var(--u-muted); text-transform: none !important; letter-spacing: 0 !important; }
+  #outfit-builder .ob-fseg, #outfit-builder .ob-fseg .ob-fchip { border-radius: 0 !important; }
   #outfit-builder .ob-size-select { flex: 0 0 auto; max-width: 52%; min-height: 44px; border: 0 !important; background-color: transparent !important; font: 600 15px Inter, sans-serif; text-align: right; }
   #outfit-builder .ob-sizes-go { width: 100%; min-height: 54px; margin-top: 8px; background: var(--u-ink) !important; color: var(--u-gold) !important; border: 1px solid var(--u-line) !important; font: 600 13px Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; }
 
@@ -137,7 +139,9 @@
   function start() {
     var root = document.getElementById('outfit-builder'); if (!root) return;
     decorate();
-    new MutationObserver(function () { decorate(); trio(); }).observe(document.body, { childList: true, subtree: true });
+    var t0 = 0;
+    new MutationObserver(function () { decorate(); clearTimeout(t0); t0 = setTimeout(trio, 30); }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    document.addEventListener('click', function () { setTimeout(trio, 60); setTimeout(trio, 450); }, true);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
