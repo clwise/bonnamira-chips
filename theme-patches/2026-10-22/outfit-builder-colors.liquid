@@ -1,0 +1,298 @@
+{%- comment -%}
+  Outfit Builder colour loop (2026-10-10). FLOW v2 (2026-10-22): two colour screens with prints, see the script below.
+  Right after the shopper taps an occasion, four quick colour questions appear:
+    1. favourite colour  2. a colour she owns too much of  3. match or contrast  4. a colour she's after today
+  Answers go to window.OB_COLOR_PREFS (and sessionStorage) and the matching engine (v3.3) reads them:
+  the core three pieces get >=1 favourite-colour piece and 1-2 of today's colour (contrast colour when none is in stock),
+  and the "too much" colour is pushed to the bottom. Everything can be skipped.
+  v2 (2026-10-11): a 5th step picks two of three shades of her colour; also the "See the outfit with jewelry" prompt
+  (jewelry starts empty; the prompt sets answers.jewelryOn and reloads the saved outfit) and the Other-accessories tile style.
+  v3 (2026-10-12): Spanish storefront (locale "es*") gets Spanish copy, colour and shade names; French gets the jewelry prompt.
+{%- endcomment -%}
+{%- assign ob_lang = request.locale.iso_code | slice: 0, 2 -%}
+<style>
+  .obc { position: fixed; inset: 0; z-index: 1100; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(22,19,16,.55); font-family: Inter, sans-serif; color: #161310; overscroll-behavior: contain; touch-action: manipulation; }
+  .obc[hidden] { display: none !important; }
+  .obc-card { width: min(520px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; background: #fffaf0; border: 1px solid #b08c3c; box-shadow: 0 24px 60px rgba(22,19,16,.35); padding: 22px 20px 18px; overscroll-behavior: contain; }
+  .obc-step { margin: 0 0 6px; font-size: 11px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: #8a6d24; }
+  .obc-q { margin: 0 0 4px; font-family: var(--font-heading, Fraunces, serif); font-size: 22px; line-height: 1.2; }
+  .obc-sub { margin: 0 0 14px; font-size: 13px; color: #5c5349; }
+  .obc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .obc-sw { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 4px; background: #fff; border: 1px solid #e3d9c9; cursor: pointer; font: inherit; font-size: 12px; color: inherit; min-height: 44px; }
+  .obc-sw i { display: block; width: 30px; height: 30px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
+  .obc-sw:hover, .obc-sw:focus-visible { border-color: #161310; outline: none; }
+  .obc-sw.is-on { border-color: #161310; box-shadow: 0 0 0 2px #161310; }
+  .obc-sw.is-off { opacity: .35; }
+  .obc-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .obc-big { padding: 16px 12px; background: #fff; border: 1px solid #e3d9c9; cursor: pointer; font: inherit; color: inherit; text-align: left; min-height: 44px; }
+  .obc-big b { display: block; font-family: var(--font-heading, Fraunces, serif); font-size: 18px; margin-bottom: 4px; }
+  .obc-big span { font-size: 12px; color: #5c5349; }
+  .obc-big:hover, .obc-big:focus-visible { border-color: #161310; outline: none; }
+  .obc-big.is-on { border-color: #161310; box-shadow: 0 0 0 2px #161310; }
+  .obc-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 16px; }
+  .obc-link { background: none; border: 0; padding: 10px 4px; min-height: 44px; font: inherit; font-size: 13px; color: #5c5349; text-decoration: underline; cursor: pointer; }
+  .obc-go { min-height: 44px; padding: 10px 18px; background: #161310; color: #f0c75c; border: 1px solid #b08c3c; font: inherit; font-weight: 600; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
+  .obc-dots { display: flex; gap: 6px; margin-bottom: 12px; }
+  .obc-dots span { flex: 1; height: 3px; background: #e3d9c9; }
+  .obc-dots span.is-done { background: #161310; }
+  @media (max-width: 420px) { .obc-grid { grid-template-columns: repeat(3, 1fr); } }
+  .obc-shades { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .obc-shade { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 6px; background: #fff; border: 1px solid #e3d9c9; cursor: pointer; font: inherit; font-size: 13px; color: inherit; min-height: 44px; }
+  .obc-shade i { display: block; width: 56px; height: 56px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
+  .obc-shade:hover, .obc-shade:focus-visible { border-color: #161310; outline: none; }
+  .obc-shade.is-on { border-color: #161310; box-shadow: 0 0 0 2px #161310; }
+  .obc-pickn { margin: 12px 0 0; text-align: center; font-size: 12px; color: #5c5349; }
+  /* Jewelry prompt, shown above the outfit until she opts in */
+  .obj { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 14px; padding: 12px 14px; background: #fffaf0; border: 1px solid #b08c3c; font-family: Inter, sans-serif; color: #161310; }
+  .obj[hidden] { display: none !important; }
+  .obj p { margin: 0; font-size: 14px; line-height: 1.35; flex: 1 1 200px; }
+  .obj b { font-family: var(--font-heading, Fraunces, serif); font-size: 16px; }
+  .obj button { min-height: 44px; padding: 10px 16px; background: #161310; color: #f0c75c; border: 1px solid #b08c3c; font: inherit; font-weight: 600; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+  body.ob-jewel-off #ob-reroll-jewel { display: none; }
+  /* Other accessories tile (head and shoulder pieces), centred below the body map */
+  #outfit-builder .ob-map-extra { display: flex; justify-content: center; margin-top: 14px; }
+  #outfit-builder .ob-map-extra .ob-tile-wrap { width: min(50%, 300px); }
+  #outfit-builder .t-wide .ob-tile { aspect-ratio: 3 / 2; }
+  /* Flow v2 (2026-10-22) */
+  .obc-lbl { margin: 14px 0 8px; font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #8a6d24; }
+  .obc-lbl:first-child { margin-top: 0; }
+  .obc-more { margin-top: 4px; padding: 10px; background: #fff; border: 1px solid #e3d9c9; }
+  .obc-shades-sm .obc-shade { padding: 8px 4px; font-size: 12px; } .obc-shades-sm .obc-shade i { width: 34px; height: 34px; }
+  .obc-big-sm { padding: 10px; } .obc-big-sm b { font-size: 15px; }
+  .obc-prints { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .obc-pr { display: flex; align-items: center; gap: 10px; padding: 8px; background: #fff; border: 1px solid #e3d9c9; cursor: pointer; font: inherit; color: inherit; text-align: left; min-height: 44px; }
+  .obc-pr i { flex: 0 0 40px; width: 40px; height: 40px; border-radius: 50%; background: #efe6d6 center / cover; box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); display: grid; place-items: center; font-style: normal; font-weight: 700; }
+  .obc-pr span { display: grid; min-width: 0; } .obc-pr b { font-size: 13px; } .obc-pr small { font-size: 11px; color: #5c5349; }
+  .obc-pr.is-on { border-color: #161310; box-shadow: 0 0 0 2px #161310; }
+  .obc-busy { background: repeating-linear-gradient(45deg, #e0809f 0 6px, #f1c40f 6px 12px, #3a6ea5 12px 18px) !important; }
+  .obc-sw:disabled { cursor: default; }
+  /* picker filter chips */
+  #outfit-builder .ob-filters { display: grid; gap: 8px; margin: 0 0 12px; }
+  #outfit-builder .ob-fseg, #outfit-builder .ob-frow { display: flex; gap: 6px; overflow-x: auto; padding: 2px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  #outfit-builder .ob-fseg::-webkit-scrollbar, #outfit-builder .ob-frow::-webkit-scrollbar { display: none; }
+  #outfit-builder .ob-fchip { flex: none; min-height: 38px; padding: 6px 12px; border: 1px solid #d9cdb8; border-radius: 999px; background: #fff; color: #161310; font: inherit; font-size: 13px; white-space: nowrap; cursor: pointer; }
+  #outfit-builder .ob-fchip small { color: #8a8074; font-size: 11px; }
+  #outfit-builder .ob-fchip.is-on { background: #161310; color: #f0c75c; border-color: #161310; }
+  #outfit-builder .ob-fchip.is-on small { color: #d9c189; }
+  #outfit-builder .ob-fseg .ob-fchip { border-radius: 6px; font-weight: 600; }
+</style>
+<div class="obc" id="obc" role="dialog" aria-modal="true" aria-labelledby="obc-q" hidden>
+  <div class="obc-card">
+    <div class="obc-dots" id="obc-dots" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+    <p class="obc-step" id="obc-step"></p>
+    <h2 class="obc-q" id="obc-q"></h2>
+    <p class="obc-sub" id="obc-sub"></p>
+    <div id="obc-body"></div>
+    <div class="obc-foot">
+      <button type="button" class="obc-link" id="obc-back">{% if ob_lang == 'es' %}Atrás{% else %}Back{% endif %}</button>
+      <button type="button" class="obc-link" id="obc-skip">{% if ob_lang == 'es' %}Omitir colores{% else %}Skip colors{% endif %}</button>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  /* Flow v2 (2026-10-22): two colour screens instead of five.
+     1. "What color or print are you in the mood for?"  colours + prints on one screen; tapping a colour opens its shades
+        and match/contrast right there. A print pre-sets the print filter in the dress/top picker.
+     2. "Anything you already have too much of?"  colours + "Busy prints" (pre-sets the picker to solids).
+     Answers go to window.OB_COLOR_PREFS (+ sessionStorage); fav and today are the same colour now. */
+  var KEY = 'ob-colors-v1', modal = document.getElementById('obc');
+  if (!modal) return;
+  var ES = {{ ob_lang | json }} === 'es';
+  var FAM_ES = { black: 'Negro', white: 'Blanco y crema', neutral: 'Beige y nude', brown: 'Marrón', gray: 'Gris', red: 'Rojo', pink: 'Rosa', orange: 'Naranja y coral', yellow: 'Amarillo', green: 'Verde', blue: 'Azul', denim: 'Denim', purple: 'Morado', metallic: 'Dorado y plateado', multi: 'Multicolor' };
+  var SHADE_ES = { 'Bright white': 'Blanco brillante', 'Ivory': 'Marfil', 'Cream': 'Crema', 'Nude': 'Nude', 'Sand': 'Arena', 'Taupe': 'Topo', 'Caramel': 'Caramelo', 'Brown': 'Marrón', 'Espresso': 'Espresso', 'Light gray': 'Gris claro', 'Gray': 'Gris', 'Charcoal': 'Gris carbón', 'Bright red': 'Rojo intenso', 'Classic red': 'Rojo clásico', 'Burgundy': 'Vino', 'Blush': 'Rosa pálido', 'Rose': 'Rosa', 'Hot pink': 'Rosa fucsia', 'Peach': 'Durazno', 'Orange & coral': 'Naranja y coral', 'Rust': 'Óxido', 'Lemon': 'Limón', 'Sunny yellow': 'Amarillo sol', 'Mustard': 'Mostaza', 'Sage & mint': 'Salvia y menta', 'Emerald': 'Esmeralda', 'Olive & forest': 'Oliva y verde bosque', 'Sky blue': 'Azul cielo', 'Royal blue': 'Azul rey', 'Navy': 'Azul marino', 'Light wash': 'Lavado claro', 'Medium wash': 'Lavado medio', 'Dark wash': 'Lavado oscuro', 'Lavender': 'Lavanda', 'Violet': 'Violeta', 'Plum': 'Ciruela', 'Gold': 'Dorado', 'Silver': 'Plateado', 'Rose gold & mixed': 'Oro rosa y mixto' };
+  var PAT_ES = { floral: 'Floral', animal: 'Animal print', stripes: 'Rayas', tropical: 'Tropical', geometric: 'Geométrico y cuadros', print: 'Otros estampados' };
+  var T = ES ? {
+    step: function (n) { return 'Color ' + n + ' de 2'; },
+    q1: '¿Qué color o estampado te apetece hoy?', s1: 'Toca uno y armamos el outfit en torno a él.',
+    colors: 'Colores', prints: 'O un estampado', anyPrint: 'Cualquier estampado', inStock: function (n) { return n + ' disponibles'; },
+    shades: '¿Qué tonos? (opcional, hasta dos)', how: '¿Cómo lo combinamos?', match: 'Combinar', matchSub: 'Todo en la misma familia', contrast: 'Contrastar', contrastSub: 'Colores que resaltan',
+    none1: 'Sin preferencia', go: 'Continuar',
+    q2: '¿De qué tienes demasiado?', s2: 'Lo dejaremos fuera de tu outfit.', busy: 'Estampados llamativos', none2: 'Nada en particular',
+    back: 'Atrás', skip: 'Omitir colores'
+  } : {
+    step: function (n) { return 'Color ' + n + ' of 2'; },
+    q1: 'What color or print are you in the mood for?', s1: 'Tap one and we’ll build the outfit around it.',
+    colors: 'Colors', prints: 'Or a print', anyPrint: 'Any print', inStock: function (n) { return n + ' in stock'; },
+    shades: 'Which shades? (optional, up to two)', how: 'How should the rest go with it?', match: 'Match', matchSub: 'Same color family, softly layered', contrast: 'Contrast', contrastSub: 'Colors that pop against it',
+    none1: 'No preference', go: 'Continue',
+    q2: 'Anything you already have too much of?', s2: 'We’ll keep it out of your outfit.', busy: 'Busy prints', none2: 'Nothing in particular',
+    back: 'Back', skip: 'Skip colors'
+  };
+  function famName(f) { return ES && FAM_ES[f.key] ? FAM_ES[f.key] : f.label; }
+  function shadeName(sh) { return ES && SHADE_ES[sh.label] ? SHADE_ES[sh.label] : sh.label; }
+  function blank() { return { fav: '', tooMuch: '', mode: '', today: '', shadeFam: '', shades: [], print: '', noPrints: false }; }
+  var prefs = blank(), saved = null;
+  try { saved = JSON.parse(sessionStorage.getItem(KEY) || 'null'); } catch (e) {}
+  if (saved) { prefs = Object.assign(blank(), saved); window.OB_COLOR_PREFS = prefs; }
+  var i = 0, pending = null, lastFocus = null, occ = '', printOpts = null, draft = null;
+  var el = function (id) { return document.getElementById(id); };
+  var OBf = function () { return window.OutfitBuilder; };
+  function fams() { var OB = OBf(); return ((OB && OB.COLOR_FAMILIES) || []).filter(function (f) { return f.key !== 'multi'; }); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function save() { window.OB_COLOR_PREFS = prefs; try { sessionStorage.setItem(KEY, JSON.stringify(prefs)); } catch (e) {} }
+  function loadPrints() {
+    var OB = OBf(); if (!OB || !OB.loadCatalog) return;
+    OB.loadCatalog().then(function (cat) {
+      var tally = {};
+      ['dress', 'separates'].forEach(function (st) {
+        var a = { occasion: occ, style: st, size: '', finish: '', color: '', pattern: '' };
+        var ok = false; try { ok = OB.options(cat, a, 'style').indexOf(st) !== -1; } catch (e) {}
+        if (!ok) return;
+        (OB.options(cat, a, 'pattern') || []).forEach(function (p) {
+          if (!p.key || !p.products) return;
+          var t = tally[p.key] || (tally[p.key] = { key: p.key, n: 0, image: p.image });
+          t.n += p.products; if (!t.image) t.image = p.image;
+        });
+      });
+      printOpts = Object.keys(tally).map(function (k) { return tally[k]; }).sort(function (a, b) { return b.n - a.n; });
+      if (!modal.hidden && i === 0) render();
+    });
+  }
+  function dots() { Array.prototype.forEach.call(el('obc-dots').children, function (d, k) { d.style.display = k < 2 ? '' : 'none'; d.className = k <= i ? 'is-done' : ''; }); }
+  function render() {
+    dots();
+    el('obc-step').textContent = T.step(i + 1);
+    el('obc-back').style.visibility = i ? 'visible' : 'hidden';
+    var body = el('obc-body'), h = '';
+    if (i === 0) {
+      el('obc-q').textContent = T.q1; el('obc-sub').textContent = T.s1;
+      h += '<p class="obc-lbl">' + T.colors + '</p><div class="obc-grid">' + fams().map(function (f) {
+        return '<button type="button" class="obc-sw' + (draft.today === f.key ? ' is-on' : '') + '" data-fam="' + f.key + '"><i style="background:' + f.swatch + '"></i>' + esc(famName(f)) + '</button>';
+      }).join('') + '</div>';
+      if (draft.today) {
+        var OB = OBf(), list = (draft.today !== 'black' && OB && OB.SHADES && OB.SHADES[draft.today]) || [];
+        h += '<div class="obc-more">';
+        if (list.length) h += '<p class="obc-lbl">' + T.shades + '</p><div class="obc-shades obc-shades-sm">' + list.map(function (sh) {
+          return '<button type="button" class="obc-shade' + (draft.shades.indexOf(sh.key) !== -1 ? ' is-on' : '') + '" data-shade="' + sh.key + '"><i style="background:' + sh.swatch + '"></i>' + esc(shadeName(sh)) + '</button>';
+        }).join('') + '</div>';
+        h += '<p class="obc-lbl">' + T.how + '</p><div class="obc-two">' +
+          '<button type="button" class="obc-big obc-big-sm' + (draft.mode === 'match' ? ' is-on' : '') + '" data-mode="match"><b>' + T.match + '</b><span>' + T.matchSub + '</span></button>' +
+          '<button type="button" class="obc-big obc-big-sm' + (draft.mode === 'contrast' ? ' is-on' : '') + '" data-mode="contrast"><b>' + T.contrast + '</b><span>' + T.contrastSub + '</span></button></div></div>';
+      }
+      if (printOpts && printOpts.length) {
+        var tot = printOpts.reduce(function (s, p) { return s + p.n; }, 0);
+        h += '<p class="obc-lbl">' + T.prints + '</p><div class="obc-prints">' +
+          '<button type="button" class="obc-pr' + (draft.print === 'any' ? ' is-on' : '') + '" data-print="any"><i class="obc-pr-any">?</i><span><b>' + T.anyPrint + '</b><small>' + T.inStock(tot) + '</small></span></button>' +
+          printOpts.map(function (p) {
+            var lbl = ES && PAT_ES[p.key] ? PAT_ES[p.key] : ((OBf() && OBf().patternLabel) ? OBf().patternLabel(p.key) : p.key);
+            var im = p.image ? String(p.image).replace(/^\/\//, 'https://') : '';
+            return '<button type="button" class="obc-pr' + (draft.print === p.key ? ' is-on' : '') + '" data-print="' + p.key + '"><i' + (im ? ' style="background-image:url(&#39;' + esc(im) + '&#39;)"' : '') + '></i><span><b>' + esc(lbl) + '</b><small>' + T.inStock(p.n) + '</small></span></button>';
+          }).join('') + '</div>';
+      }
+      var ready = !!(draft.today || draft.print);
+      h += '<div class="obc-foot"><button type="button" class="obc-link" data-none="1">' + T.none1 + '</button><button type="button" class="obc-go" id="obc-go"' + (ready ? '' : ' disabled style="opacity:.45"') + '>' + T.go + '</button></div>';
+    } else {
+      el('obc-q').textContent = T.q2; el('obc-sub').textContent = T.s2;
+      h = '<div class="obc-grid">' + fams().map(function (f) {
+        var off = draft.today === f.key;
+        return '<button type="button" class="obc-sw' + (draft.tooMuch === f.key ? ' is-on' : '') + (off ? ' is-off' : '') + '" data-too="' + f.key + '"' + (off ? ' disabled' : '') + '><i style="background:' + f.swatch + '"></i>' + esc(famName(f)) + '</button>';
+      }).join('') +
+      (draft.print ? '' : '<button type="button" class="obc-sw' + (draft.noPrints ? ' is-on' : '') + '" data-too="__prints"><i class="obc-busy"></i>' + T.busy + '</button>') + '</div>' +
+      '<div class="obc-foot" style="justify-content:center"><button type="button" class="obc-link" data-too="">' + T.none2 + '</button></div>';
+    }
+    body.innerHTML = h;
+  }
+  function finish() {
+    prefs = draft; save(); modal.hidden = true;
+    var chip = pending; pending = null;
+    if (lastFocus && lastFocus.focus) { try { lastFocus.focus({ preventScroll: true }); } catch (e) {} }
+    if (chip) { bypass = true; chip.click(); bypass = false; }
+  }
+  function open(chip) {
+    pending = chip; lastFocus = chip; i = 0; occ = chip.getAttribute('data-value') || ''; printOpts = null;
+    draft = Object.assign(blank(), { today: prefs.today, shades: (prefs.shades || []).slice(), mode: prefs.mode, print: prefs.print, tooMuch: prefs.tooMuch, noPrints: prefs.noPrints });
+    modal.hidden = false;
+    var go = function () { render(); loadPrints(); el('obc-body').scrollTop = 0; };
+    if (OBf() && fams().length) go();
+    else { var n = 0, t = setInterval(function () { if ((OBf() && fams().length) || ++n > 40) { clearInterval(t); go(); } }, 100); }
+  }
+  el('obc-body').addEventListener('click', function (e) {
+    var b;
+    if ((b = e.target.closest('[data-fam]'))) {
+      var k = b.getAttribute('data-fam');
+      if (draft.today === k) { draft.today = ''; draft.shades = []; } else { draft.today = k; draft.shades = []; }
+      draft.print = ''; render(); return;
+    }
+    if ((b = e.target.closest('[data-shade]'))) {
+      var s = b.getAttribute('data-shade'), at = draft.shades.indexOf(s);
+      if (at !== -1) draft.shades.splice(at, 1); else { draft.shades.push(s); if (draft.shades.length > 2) draft.shades.shift(); }
+      render(); return;
+    }
+    if ((b = e.target.closest('[data-mode]'))) { var m = b.getAttribute('data-mode'); draft.mode = draft.mode === m ? '' : m; render(); return; }
+    if ((b = e.target.closest('[data-print]'))) {
+      var p = b.getAttribute('data-print'); draft.print = draft.print === p ? '' : p;
+      if (draft.print) { draft.today = ''; draft.shades = []; draft.mode = ''; draft.noPrints = false; }
+      render(); return;
+    }
+    if (e.target.closest('[data-none]')) { draft.today = ''; draft.shades = []; draft.mode = ''; draft.print = ''; i = 1; render(); return; }
+    if (e.target.closest('#obc-go')) {
+      if (!(draft.today || draft.print)) return;
+      draft.fav = draft.today; draft.shadeFam = draft.today && draft.shades.length ? draft.today : '';
+      if (!draft.shadeFam) draft.shades = [];
+      i = 1; render(); return;
+    }
+    if ((b = e.target.closest('[data-too]'))) {
+      var v = b.getAttribute('data-too');
+      if (v === '__prints') { draft.noPrints = true; draft.tooMuch = ''; } else { draft.tooMuch = v; draft.noPrints = false; }
+      finish(); return;
+    }
+  });
+  el('obc-back').textContent = T.back; el('obc-skip').textContent = T.skip;
+  el('obc-back').addEventListener('click', function () { if (i) { i--; render(); } });
+  el('obc-skip').addEventListener('click', function () { draft = blank(); finish(); });
+  document.addEventListener('keydown', function (e) { if (!modal.hidden && e.key === 'Escape') { modal.hidden = true; pending = null; } });
+  var bypass = false;
+  document.addEventListener('click', function (e) {
+    if (bypass) return;
+    var chip = e.target.closest && e.target.closest('#ob-steps [data-step="occasion"] .ob-chip');
+    if (!chip) return;
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    open(chip);
+  }, true);
+})();
+
+(function () {
+  var STORE = 'ob-outfit-v1', bar = null, LG = {{ ob_lang | json }};
+  var JP = LG === 'es' ? { msg: '<b>Tu outfit está listo.</b><br>¿Quieres verlo con joyas?', btn: 'Ver el outfit con joyas' }
+    : LG === 'fr' ? { msg: '<b>Votre tenue est prête.</b><br>Envie de la voir avec des bijoux ?', btn: 'Voir la tenue avec des bijoux' }
+    : { msg: '<b>Your outfit is set.</b><br>Ready to see it with jewelry?', btn: 'See the outfit with jewelry' };
+  function readState() { try { return JSON.parse(sessionStorage.getItem(STORE) || 'null'); } catch (e) { return null; } }
+  function jewelOn() { var s = readState(); return !!(s && s.answers && s.answers.jewelryOn); }
+  function coreReady() {
+    var root = document.getElementById('outfit-builder'); if (!root) return false;
+    var sep = !!root.querySelector('.ob-tile[data-select="top"]');
+    var need = sep ? ['top', 'bottom', 'shoes'] : ['look', 'shoes'];
+    return need.every(function (k) { var t = root.querySelector('.ob-tile[data-select="' + k + '"]'); return t && !t.classList.contains('is-empty'); });
+  }
+  function ensure() {
+    if (bar) return bar;
+    var board = document.getElementById('ob-board'); if (!board) return null;
+    bar = document.createElement('div'); bar.className = 'obj'; bar.hidden = true;
+    bar.innerHTML = '<p>' + JP.msg + '</p><button type="button" id="obj-go">' + JP.btn + '</button>';
+    board.parentNode.insertBefore(bar, board);
+    bar.querySelector('button').addEventListener('click', function () {
+      var s = readState(); if (!s || !s.answers) return;
+      s.answers.jewelryOn = true; s.t = Date.now();
+      try { sessionStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { return; }
+      location.hash = '#look'; location.reload();
+    });
+    return bar;
+  }
+  var busy = false;
+  function sync() {
+    if (busy) return; busy = true;
+    try {
+      var res = document.getElementById('ob-results'), shown = res && !res.hidden;
+      var off = shown && !jewelOn();
+      document.body.classList.toggle('ob-jewel-off', !!off);
+      var b = ensure(), want = !(off && coreReady()); if (b && b.hidden !== want) b.hidden = want;
+    } finally { busy = false; }
+  }
+  function start() { var root = document.getElementById('outfit-builder'); if (!root) return; new MutationObserver(sync).observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'class'] }); sync(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+</script>
+{% schema %}
+{ "name": "Builder colour loop", "settings": [] }
+{% endschema %}
