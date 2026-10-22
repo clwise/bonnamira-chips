@@ -252,7 +252,8 @@ return first.concat(rest);
 var PICKS = 4; // UI v2 (2026-10-22): 2x2 grid on phones
 var SLIDER = true;
 function wireSlider(grid) {
-/* All state is looked up at call time: other builder sections can re-render the cards, so nothing holds on to an old track. */
+/* Swiping uses native CSS scroll-snap (one card at a time on phones). JS drives the arrow buttons, arrow keys and the counter.
+   All state is looked up at call time: other builder sections can re-render the cards. */
 function T() { return grid.querySelector('.ob-track'); }
 function w1(tr) { var c = tr && tr.querySelector('.ob-choice'); return c ? c.getBoundingClientRect().width + parseFloat(getComputedStyle(tr).columnGap || 0) : 1; }
 function per(tr) { var c = tr && tr.querySelector('.ob-choice'); return c ? Math.max(1, Math.round((tr.clientWidth + parseFloat(getComputedStyle(tr).columnGap || 0)) / w1(tr))) : 1; }
@@ -270,14 +271,7 @@ var tr = T(); if (!tr) return;
 var to = Math.max(0, Math.min(tr.children.length - per(tr), idx(tr) + dir * per(tr)));
 grid._obStart = to; goTo(tr, to);
 }
-function settle() {
-var tr = T(); if (!tr || grid._obTouch) return;
-var p = per(tr), start = grid._obStart || 0, target = Math.round(tr.scrollLeft / w1(tr));
-target = Math.max(start - p, Math.min(start + p, target));
-target = Math.max(0, Math.min(tr.children.length - p, target));
-if (Math.abs(tr.scrollLeft - target * w1(tr)) > 2) goTo(tr, target); else grid._obStart = target;
-sync();
-}
+function settle() { sync(); }
 grid._obStart = 0;
 if (!grid._obSl) {
 grid._obSl = true;
