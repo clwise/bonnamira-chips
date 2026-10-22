@@ -82,10 +82,10 @@
   .ob-pop-k2 { margin: 6px 0 0; font: 600 11px Inter, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: #8a6d24; }
   /* picker slider (2026-10-22): 1 per view on phones, 3 on desktop; swipe, arrows, keyboard; never moves on its own */
   #outfit-builder .ob-choices.ob-choices-slider { display: block !important; position: relative; }
-  #outfit-builder .ob-track { display: grid; grid-auto-flow: column; grid-auto-columns: 100%; column-gap: 12px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scroll-behavior: smooth; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; touch-action: pan-x pan-y; outline: none; }
+  #outfit-builder .ob-track { display: grid; grid-auto-flow: column; grid-auto-columns: 100%; column-gap: 12px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: none !important; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; touch-action: pan-x pan-y; outline: none; }
   #outfit-builder .ob-track::-webkit-scrollbar { display: none; }
-  #outfit-builder .ob-track > .ob-choice { scroll-snap-align: start; scroll-snap-stop: always; min-width: 0; }
-  @media (min-width: 768px) { #outfit-builder .ob-track { grid-auto-columns: calc((100% - 24px) / 3); } #outfit-builder .ob-track > .ob-choice { scroll-snap-stop: normal; } }
+  #outfit-builder .ob-track > .ob-choice { scroll-snap-align: none !important; min-width: 0; }
+  @media (min-width: 768px) { #outfit-builder .ob-track { grid-auto-columns: calc((100% - 24px) / 3); } }
   #outfit-builder .ob-slnav { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 14px 0 4px; }
   #outfit-builder .ob-slbtn { width: 48px; height: 48px; display: grid; place-items: center; padding: 0; border: 1px solid var(--u-ink); border-radius: 50%; background: #fff; color: var(--u-ink); font: 400 28px/1 Inter, sans-serif; cursor: pointer; transition: background .15s ease, color .15s ease; }
   #outfit-builder .ob-slbtn:not(:disabled):active { background: var(--u-ink); color: var(--u-gold); }
