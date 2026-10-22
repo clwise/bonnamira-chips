@@ -139,7 +139,7 @@ return toks;
 var COLOR_FAMILIES = [
 { key: 'black',   label: 'Black',          swatch: '#1a1a1a', words: ['black', 'negro', 'noir', 'onyx', 'jet'] },
 { key: 'white',   label: 'White & Cream',  swatch: '#f7f3ea', words: ['white', 'blanco', 'ivory', 'cream', 'buttercream', 'off white', 'off-white', 'eggshell', 'bone', 'pearl', 'clear', 'transparent'] },
-{ key: 'neutral', label: 'Beige & Nude',   swatch: '#d9c3a5', words: ['beige', 'tan', 'khaki', 'nude', 'sand', 'taupe', 'champagne', 'camel', 'stone', 'dust storm', 'oatmeal', 'apricot'] },
+{ key: 'neutral', label: 'Beige & Nude',   swatch: '#d9c3a5', words: ['beige', 'tan', 'khaki', 'nude', 'sand', 'taupe', 'champagne', 'camel', 'stone', 'dust storm', 'oatmeal', 'apricot', 'latte'] },
 { key: 'brown',   label: 'Brown',          swatch: '#6b4423', words: ['brown', 'chocolate', 'cacao', 'mocha', 'caramel', 'cinnamon', 'coffee', 'espresso', 'cafe', 'café', 'cognac'] },
 { key: 'gray',    label: 'Gray',           swatch: '#8a8a8a', words: ['gray', 'grey', 'gris', 'charcoal', 'heather'] },
 { key: 'red',     label: 'Red',            swatch: '#b0262e', words: ['red', 'rojo', 'scarlet', 'burgundy', 'wine', 'maroon', 'cherry', 'crimson', 'ruby', 'garnet'] },
@@ -147,10 +147,11 @@ var COLOR_FAMILIES = [
 { key: 'orange',  label: 'Orange & Coral', swatch: '#e8752c', words: ['orange', 'naranja', 'tangerine', 'coral', 'rust', 'terracotta', 'peach', 'sherbet', 'salmon'] },
 { key: 'yellow',  label: 'Yellow',         swatch: '#f1c40f', words: ['yellow', 'amarillo', 'mustard', 'butter', 'lemon'] },
 { key: 'green',   label: 'Green',          swatch: '#3d8b57', words: ['green', 'verde', 'sage', 'olive', 'oliva', 'moss', 'emerald', 'lime', 'mint', 'forest', 'seafoam'] },
-{ key: 'blue',    label: 'Blue',   swatch: '#3a6ea5', words: ['blue', 'azul', 'navy', 'teal', 'turquoise', 'cobalt', 'indigo'] },
+{ key: 'blue',    label: 'Blue',   swatch: '#3a6ea5', words: ['blue', 'azul', 'navy', 'teal', 'turquoise', 'cobalt', 'indigo', 'aqua'] },
 { key: 'denim',   label: 'Denim',          swatch: '#4f74a3', words: ['denim', 'chambray', 'wash', 'washed', 'jean', 'jeans'] },
 { key: 'purple',  label: 'Purple',         swatch: '#7d5ba6', words: ['purple', 'morado', 'lilac', 'plum', 'mauve', 'lavender', 'violet', 'amethyst'] },
-{ key: 'metallic', label: 'Gold & Silver', swatch: 'linear-gradient(135deg,#cfa435,#f3e2a6 50%,#c0c0c0)', words: ['gold', 'golden', 'dorado', 'silver', 'plata', 'metallic', 'iridescent'] }
+{ key: 'metallic', label: 'Gold & Silver', swatch: 'linear-gradient(135deg,#cfa435,#f3e2a6 50%,#c0c0c0)', words: ['gold', 'golden', 'dorado', 'silver', 'plata', 'metallic', 'iridescent'] },
+{ key: 'multi', label: 'Multicolor', swatch: 'conic-gradient(#e0809f,#f1c40f,#3d8b57,#3a6ea5,#7d5ba6,#e0809f)', words: ['multicolor', 'multicolour', 'multicolored', 'multi-color', 'multi', 'colorful', 'colourful', 'rainbow'] }
 ];
 var CONTRAST = {
 black:    ['white', 'red', 'neutral', 'metallic', 'pink', 'gray'],
@@ -165,7 +166,8 @@ yellow:   ['white', 'blue', 'gray', 'black', 'neutral'],
 green:    ['neutral', 'white', 'brown', 'black', 'metallic'],
 blue:     ['white', 'neutral', 'brown', 'gray', 'black'],
 purple:   ['gray', 'black', 'white', 'neutral', 'metallic'],
-metallic: ['black', 'white', 'neutral', 'red']
+metallic: ['black', 'white', 'neutral', 'red'],
+multi:    ['black', 'white', 'neutral', 'denim', 'brown']
 };
 (function () {
 function addDenim(tbl) {
@@ -253,14 +255,29 @@ if (setName && setName === setNameOf(a.p)) score += 6;
 });
 return score;
 }
-var ACCESSORY_NEUTRALS = ['black', 'neutral', 'metallic', 'white', 'brown'];
+var ACCESSORY_NEUTRALS = ['black', 'neutral', 'metallic', 'white', 'brown', 'multi'];
 var _famCache = {};
 var COLOR_ALIASES = [
 [/black forest/g, 'forest'],
 [/\bcow( print)?\b/g, 'white black'],
 [/\bzebra\b/g, 'black white'],
 [/\b(leopard|cheetah)\b/g, 'brown'],
-[/\bcamo(uflage)?\b/g, 'olive']
+[/\bcamo(uflage)?\b/g, 'olive'],
+[/\bgun ?(color|colour|metal)\b/g, 'charcoal'],
+[/\bgunmetal\b/g, 'charcoal'],
+[/\bhulan\b/g, 'teal'],
+[/\baquamarine\b/g, 'sky blue'],
+[/\bquicksand\b/g, 'sand'],
+[/\bskin( colou?r)?\b/g, 'nude'],
+[/\bstrawberry\b/g, 'bright red'],
+[/\bmatcha\b/g, 'sage'],
+[/\bgum leaf\b/g, 'sage'],
+[/\bamber\b/g, 'mustard'],
+[/\brhinestones?\b/g, 'silver'],
+[/\bfloral\b/g, 'multicolor'],
+[/^dark$/, 'dark wash'],
+[/^medium$/, 'medium wash'],
+[/^light$/, 'light wash']
 ];
 function colorFamilies(color) {
 if (!color) return [];
@@ -637,7 +654,7 @@ return letters.concat(plus, rest);
 }
 var SHADES = {
 white:   [{ key: 'snow', label: 'Bright white', swatch: '#fbfaf7', words: ['white', 'snow', 'optic'] }, { key: 'ivory', label: 'Ivory', swatch: '#f3ead6', words: ['ivory', 'off white', 'off-white', 'eggshell', 'bone'] }, { key: 'cream', label: 'Cream', swatch: '#ecdcb8', words: ['cream', 'buttercream', 'pearl'] }],
-neutral: [{ key: 'nude', label: 'Nude', swatch: '#dcbca1', words: ['nude', 'apricot', 'oatmeal'] }, { key: 'sand', label: 'Sand', swatch: '#d8c3a2', words: ['beige', 'sand', 'stone', 'khaki', 'tan'] }, { key: 'taupe', label: 'Taupe', swatch: '#a8927a', words: ['taupe', 'camel', 'champagne', 'dust storm'] }],
+neutral: [{ key: 'nude', label: 'Nude', swatch: '#dcbca1', words: ['nude', 'apricot', 'oatmeal'] }, { key: 'sand', label: 'Sand', swatch: '#d8c3a2', words: ['beige', 'sand', 'stone', 'khaki', 'tan', 'latte'] }, { key: 'taupe', label: 'Taupe', swatch: '#a8927a', words: ['taupe', 'camel', 'champagne', 'dust storm'] }],
 brown:   [{ key: 'caramel', label: 'Caramel', swatch: '#b98a52', words: ['caramel', 'cognac', 'cinnamon', 'light brown'] }, { key: 'brown', label: 'Brown', swatch: '#7a5238', words: ['brown', 'mocha', 'coffee', 'cafe', 'café'] }, { key: 'espresso', label: 'Espresso', swatch: '#44291f', words: ['chocolate', 'espresso', 'cacao', 'dark brown'] }],
 gray:    [{ key: 'light', label: 'Light gray', swatch: '#c9c9c9', words: ['light gray', 'light grey', 'heather', 'ash'] }, { key: 'gray', label: 'Gray', swatch: '#8c8c8c', words: ['gray', 'grey', 'gris'] }, { key: 'charcoal', label: 'Charcoal', swatch: '#3b3b3d', words: ['charcoal', 'dark gray', 'dark grey', 'graphite'] }],
 red:     [{ key: 'bright', label: 'Bright red', swatch: '#d4303a', words: ['cherry', 'scarlet', 'cerise', 'bright red', 'crimson'] }, { key: 'red', label: 'Classic red', swatch: '#b0262e', words: ['red', 'rojo', 'ruby'] }, { key: 'wine', label: 'Burgundy', swatch: '#6d1f2f', words: ['burgundy', 'wine', 'maroon', 'garnet', 'dark red'] }],
@@ -645,7 +662,7 @@ pink:    [{ key: 'blush', label: 'Blush', swatch: '#f0c4c4', words: ['blush', 'b
 orange:  [{ key: 'peach', label: 'Peach', swatch: '#f4b98f', words: ['peach', 'salmon', 'sherbet'] }, { key: 'orange', label: 'Orange & coral', swatch: '#ec7a3c', words: ['orange', 'naranja', 'tangerine', 'coral'] }, { key: 'rust', label: 'Rust', swatch: '#a64a24', words: ['rust', 'terracotta', 'burnt orange'] }],
 yellow:  [{ key: 'lemon', label: 'Lemon', swatch: '#f5e26a', words: ['lemon', 'butter', 'pale yellow'] }, { key: 'yellow', label: 'Sunny yellow', swatch: '#f1c40f', words: ['yellow', 'amarillo'] }, { key: 'mustard', label: 'Mustard', swatch: '#c9981a', words: ['mustard', 'honey'] }],
 green:   [{ key: 'sage', label: 'Sage & mint', swatch: '#a9c4a0', words: ['sage', 'mint', 'seafoam', 'light green', 'pistachio'] }, { key: 'green', label: 'Emerald', swatch: '#2f8a5a', words: ['green', 'verde', 'emerald', 'lime', 'kelly'] }, { key: 'olive', label: 'Olive & forest', swatch: '#4d5a32', words: ['olive', 'oliva', 'forest', 'moss', 'dark green', 'hunter'] }],
-blue:    [{ key: 'sky', label: 'Sky blue', swatch: '#8fc3e8', words: ['sky', 'baby blue', 'light blue', 'powder', 'ice'] }, { key: 'blue', label: 'Royal blue', swatch: '#2b50b0', words: ['blue', 'azul', 'royal', 'cobalt', 'turquoise', 'teal'] }, { key: 'navy', label: 'Navy', swatch: '#1f2f55', words: ['navy', 'midnight', 'dark blue', 'indigo'] }],
+blue:    [{ key: 'sky', label: 'Sky blue', swatch: '#8fc3e8', words: ['sky', 'baby blue', 'light blue', 'powder', 'ice', 'aqua'] }, { key: 'blue', label: 'Royal blue', swatch: '#2b50b0', words: ['blue', 'azul', 'royal', 'cobalt', 'turquoise', 'teal'] }, { key: 'navy', label: 'Navy', swatch: '#1f2f55', words: ['navy', 'midnight', 'dark blue', 'indigo'] }],
 denim:   [{ key: 'lightwash', label: 'Light wash', swatch: '#a9c3de', words: ['light wash', 'light denim', 'bleach', 'bleached'] }, { key: 'mid', label: 'Medium wash', swatch: '#5b7fa8', words: ['denim', 'medium wash', 'mid wash', 'chambray', 'wash', 'washed', 'jean', 'jeans'] }, { key: 'darkwash', label: 'Dark wash', swatch: '#273a5c', words: ['dark wash', 'dark denim', 'raw denim'] }],
 purple:  [{ key: 'lilac', label: 'Lavender', swatch: '#c8a8d8', words: ['lavender', 'lilac', 'light purple', 'mauve'] }, { key: 'purple', label: 'Violet', swatch: '#7d5ba6', words: ['purple', 'violet', 'morado', 'amethyst'] }, { key: 'plum', label: 'Plum', swatch: '#5a2a50', words: ['plum', 'eggplant', 'dark purple', 'grape'] }],
 metallic: [{ key: 'gold', label: 'Gold', swatch: '#d9a72a', words: ['gold', 'golden', 'dorado'] }, { key: 'silver', label: 'Silver', swatch: '#c4c7cc', words: ['silver', 'plata'] }, { key: 'rosegold', label: 'Rose gold & mixed', swatch: '#d8a58f', words: ['rose gold', 'mixed', 'two-tone', 'iridescent', 'metallic'] }]

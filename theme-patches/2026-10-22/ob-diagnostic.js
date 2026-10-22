@@ -153,20 +153,22 @@ function checkCoverage(OB, raw) {
 
 /* 5. Colour, swatch and chip alignment */
 async function checkColour(OB, cat) {
-  var unmapped = {}, multi = [], swatchless = [];
+  var unmapped = {}, multi = [], viaTitle = [];
   cat.forEach(function (p) {
     var seen = {};
     p.variants.forEach(function (v) {
       if (!v.color || seen[v.color]) return; seen[v.color] = 1;
       var fams = OB.variantFamilies(v, p);
       var own = OB.colorFamilies ? OB.colorFamilies(v.color) : fams;
-      if (!own.length) unmapped[v.color] = (unmapped[v.color] || []).concat(p.title);
+      if (!fams.length) unmapped[v.color] = (unmapped[v.color] || []).concat(p.title);
+      else if (!own.length) viaTitle.push('"' + v.color + '" on ' + p.title + ' -> ' + fams[0] + ' (from the title)');
       if (own.length > 1) multi.push(v.color + ' -> ' + own.join(' + ') + ' (dot: ' + own[0] + ')');
     });
   });
   var um = Object.keys(unmapped);
-  add('Colour', 'Colour names the engine understands', um.length ? 'WARN' : 'PASS', um.length ? um.length + ' colour name(s) have no colour family: no dot colour, never matched by colour' : 'Every colour name maps to a family',
+  add('Colour', 'Colour names the engine understands', um.length ? 'WARN' : 'PASS', um.length ? um.length + ' colour name(s) have no colour family: no dot colour, never matched by colour' : 'Every colour maps to a family',
     um.map(function (c) { return '"' + c + '" on ' + unmapped[c].slice(0, 2).join('; ') + (unmapped[c].length > 2 ? ' +' + (unmapped[c].length - 2) : ''); }));
+  if (viaTitle.length) add('Colour', 'Colour names read from the title', 'INFO', viaTitle.length + ' colour name(s) carry no colour, so the product title decides', viaTitle);
   var uniqMulti = multi.filter(function (x, i) { return multi.indexOf(x) === i; });
   add('Colour', 'Two-colour names (check the primary)', 'INFO', uniqMulti.length + ' distinct two-colour names; the first colour drives the dot and matching', uniqMulti);
 
