@@ -1,0 +1,8 @@
+{%- comment -%}
+  Outfit Builder diagnostic (2026-10-22). Does nothing for shoppers. Open the builder with ?ob-diag=1 to run it.
+  The tiny inline script records page errors from the start so the report can list them; the checks live in assets/ob-diagnostic.js.
+{%- endcomment -%}
+<script>(function(){if(!/[?&]ob-diag=1/.test(location.search))return;var l=window.__obErr=[];addEventListener('error',function(e){l.push((e.message||'error')+(e.filename?' @ '+e.filename.split('/').pop()+':'+e.lineno:''))},true);addEventListener('unhandledrejection',function(e){l.push('Unhandled promise: '+String(e.reason))});var s=document.createElement('script');s.src={{ 'ob-diagnostic.js' | asset_url | json }};s.defer=true;document.head.appendChild(s);})();</script>
+{% schema %}
+{ "name": "Builder diagnostic", "settings": [] }
+{% endschema %}
