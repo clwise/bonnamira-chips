@@ -1,0 +1,109 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "diag": {
+      "type": "outfit-builder-diag",
+      "settings": {}
+    },
+    "featured": {
+      "type": "outfit-builder-featured",
+      "settings": {}
+    },
+    "ai-note": {
+      "type": "outfit-builder-ai-note",
+      "settings": {}
+    },
+    "quiz": {
+      "type": "outfit-builder-quiz",
+      "settings": {}
+    },
+    "tutorials": {
+      "type": "outfit-builder-tutorials",
+      "settings": {
+        "auto_intro": true,
+        "short_es": "shopify://files/videos/BonnaMira-Mobile_ES_20s_Quick_Tour.mp4",
+        "short_url_es": "https://cdn.shopify.com/videos/c/vp/09facf472a8d4e44a101d75b2d9e964c/09facf472a8d4e44a101d75b2d9e964c.HD-1080p-2.5Mbps-97863899.mp4"
+      }
+    },
+    "go": {
+      "type": "outfit-builder-go",
+      "settings": {}
+    },
+    "screenshot-ui": {
+      "type": "outfit-builder-screenshot-ui",
+      "settings": {}
+    },
+    "tile-style": {
+      "type": "outfit-builder-tile-style",
+      "settings": {}
+    },
+    "stable": {
+      "type": "outfit-builder-stable",
+      "settings": {}
+    },
+    "popfix": {
+      "type": "outfit-builder-popfix",
+      "settings": {}
+    },
+    "outfit-builder-sheet": {
+      "type": "outfit-builder-sheet",
+      "settings": {}
+    },
+    "colors": {
+      "type": "outfit-builder-colors",
+      "settings": {}
+    },
+    "layout": {
+      "type": "outfit-builder-layout",
+      "settings": {}
+    },
+    "photos": {
+      "type": "outfit-builder-photos",
+      "settings": {}
+    },
+    "chips": {
+      "type": "outfit-builder-chips",
+      "settings": {}
+    },
+    "ui2": {
+      "type": "outfit-builder-ui2",
+      "settings": {}
+    },
+    "outfit-builder-data": {
+      "type": "outfit-builder-data",
+      "settings": {}
+    },
+    "desktop": {
+      "type": "outfit-builder-desktop",
+      "settings": {}
+    }
+  },
+  "order": [
+    "diag",
+    "featured",
+    "ai-note",
+    "quiz",
+    "tutorials",
+    "go",
+    "screenshot-ui",
+    "tile-style",
+    "stable",
+    "popfix",
+    "outfit-builder-sheet",
+    "colors",
+    "layout",
+    "photos",
+    "chips",
+    "ui2",
+    "desktop",
+    "outfit-builder-data"
+  ]
+}

@@ -1,0 +1,97 @@
+{%- comment -%}
+  Outfit Builder DESKTOP layer (2026-10-23). Desktop only (min-width 1024px): wide editorial layout from the approved desktop handoff.
+  Pure CSS on top of the existing builder; mobile (below 1024px), the engine, pricing, discounts and cart are untouched.
+  All rules are scoped to #outfit-builder or the colour dialog (#obc). Remove this section from templates/page.outfit-builder.json to go back.
+  Right-to-left (Arabic): only logical properties and grid flow are used, so the layout mirrors with dir=rtl.
+{%- endcomment -%}
+<style>
+@media (min-width: 1024px) {
+  /* ---------- Page frame ---------- */
+  #outfit-builder .ob-wrap { max-width: 1320px; padding-inline: 40px; }
+  #outfit-builder .ob-wrap > .ob-head,
+  #outfit-builder .ob-wrap > .obf,
+  #outfit-builder .ob-wrap > .ob-progress,
+  #outfit-builder .ob-wrap > .ob-step-label,
+  #outfit-builder .ob-wrap > #ob-steps,
+  #outfit-builder .ob-wrap > .ob-nav,
+  #outfit-builder .ob-wrap > .ob-loading { max-width: none; margin-inline: 0; }
+
+  /* ---------- Editorial header: title left, offer right ---------- */
+  #outfit-builder .ob-head { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); column-gap: 56px; align-items: center; text-align: start; padding: 28px 0 24px; margin-bottom: 28px; border-bottom: 1px solid #e3d9c9; }
+  #outfit-builder .ob-head > .ob-kicker, #outfit-builder .ob-head > .ob-title, #outfit-builder .ob-head > .ob-sub { grid-column: 1; margin-inline: 0; text-align: start; }
+  #outfit-builder .ob-head > .ob-title { font-size: clamp(44px, 4.4vw, 64px); line-height: 1.05; }
+  #outfit-builder .ob-head > .ob-offer { grid-column: 2; grid-row: 1 / span 3; justify-self: end; max-width: 480px; margin: 0; padding: 18px 22px; background: #fffaf0; border: 1px solid #b08c3c; text-align: start; }
+
+  /* Staff picks: full width, three generous cards */
+  #outfit-builder .obf { margin-bottom: 36px; }
+
+  /* ---------- Questions: wide, left aligned ---------- */
+  #outfit-builder .ob-step-label { text-align: start; margin: 0 0 6px; }
+  #outfit-builder #ob-steps .ob-panel { max-width: none; }
+  #outfit-builder #ob-steps .ob-q { font-size: clamp(30px, 2.8vw, 40px); line-height: 1.15; text-align: start; margin-bottom: 8px; }
+  #outfit-builder #ob-steps .ob-hint, #outfit-builder #ob-steps .ob-hint-top { text-align: start; max-width: 64ch; }
+
+  /* Occasion: 3 x 3 large cards */
+  #outfit-builder [data-step="occasion"] .ob-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  #outfit-builder [data-step="occasion"] .ob-chip { min-height: 112px; padding: 22px 26px; justify-content: flex-start; gap: 18px; font-size: 18px; }
+  #outfit-builder [data-step="occasion"] .ob-chip .ob-oi { width: 36px; height: 36px; flex: none; }
+  #outfit-builder [data-step="occasion"] .ob-chip .ob-oi svg { width: 100%; height: 100%; }
+
+  /* Size: two columns, form no longer a thin strip */
+  #outfit-builder .ob-sizes { max-width: 760px; width: 100%; }
+  #outfit-builder .ob-sizes-rows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 28px; }
+  #outfit-builder .ob-sizes-rows > .ob-size-sys { grid-column: 1 / -1; }
+  #outfit-builder .ob-sizes-go { max-width: 320px; }
+
+  /* Pickers (dress, top, bottom): cards use the full width */
+  #outfit-builder .ob-filters { gap: 12px; }
+  #outfit-builder .ob-fseg { max-width: 460px; }
+  #outfit-builder .ob-choices-slider .ob-track { gap: 20px; }
+
+  /* Shoes: 4 across, "Surprise me" on its own full row */
+  #outfit-builder #ob-shoe-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+  #outfit-builder #ob-shoe-grid .ob-card-surprise { grid-column: 1 / -1; }
+
+  /* Back / start over */
+  #outfit-builder .ob-nav { justify-content: flex-start; gap: 20px; }
+
+  /* ---------- Results: centred body map beside the item panel ---------- */
+  #outfit-builder .ob-results { max-width: none; }
+  #outfit-builder .ob-res-head { padding-top: 8px; }
+  #outfit-builder .ob-board { grid-template-columns: minmax(0, 1fr) 360px; column-gap: 40px; align-items: start; }
+  #outfit-builder .ob-lay { width: 100%; max-width: 980px; margin-inline: auto; }
+  #outfit-builder .ob-map { width: 100%; grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr) minmax(0, 1fr); gap: 14px; }
+  #outfit-builder .ob-map-mid { width: auto; }
+  #outfit-builder .ob-detail { position: sticky; top: 96px; align-self: start; max-height: calc(100dvh - 120px); overflow-y: auto; }
+  #outfit-builder .ob-summary { max-width: 980px; margin-inline: auto; }
+  #outfit-builder .ob-obj, #outfit-builder .obj { max-width: 980px; margin-inline: auto; }
+
+  /* ---------- Colour / print dialog: wide centred dialog, 7 colours across, shade panel on the side ---------- */
+  .obc { align-items: center !important; padding: 28px !important; }
+  .obc-card { width: min(1120px, 100%) !important; height: auto !important; max-height: min(92dvh, 880px) !important; border: 1px solid #b08c3c !important; border-radius: 0 !important; }
+  .obc-card::before { display: none !important; }
+  .obc-card > .obc-dots, .obc-card > .obc-step, .obc-card > .obc-q, .obc-card > .obc-sub { margin-inline: 32px !important; }
+  .obc-q { font-size: 34px !important; }
+  #obc-body { padding: 8px 32px 20px; display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 32px; align-content: start; }
+  #obc-body:has(.obc-more) { grid-template-columns: minmax(0, 1fr) 360px; }
+  #obc-body > * { grid-column: 1; }
+  #obc-body > .obc-more { grid-column: 2; grid-row: 1 / span 4; align-self: start; margin-top: 0; padding: 16px; }
+  .obc-grid { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; gap: 10px 12px !important; }
+  .obc-sw i { width: 52px !important; height: 52px !important; }
+  .obc-sw b { font-size: 13px; }
+  .obc-sw small { font-size: 11px; }
+  .obc-prints.obc-rail { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; overflow: visible; margin: 0; padding: 2px 0 6px; }
+  .obc-rail .obc-pr { flex: none; min-width: 0; }
+  .obc-shades-sm .obc-shade i { width: 44px; height: 44px; }
+  .obc-actions { padding-inline: 32px; }
+  .obc-actions .obc-go { flex: 0 0 300px; }
+}
+
+/* Very wide screens: keep reading widths sensible, never stretch the cards */
+@media (min-width: 1700px) {
+  #outfit-builder .ob-wrap { max-width: 1440px; }
+}
+</style>
+{% schema %}
+{ "name": "Builder desktop layer", "settings": [] }
+{% endschema %}
