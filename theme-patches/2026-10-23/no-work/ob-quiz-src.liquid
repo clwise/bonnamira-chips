@@ -1,0 +1,397 @@
+{%- case request.locale.iso_code -%}
+{%- when 'es' -%}{%- assign ob_q_style = '¿Una pieza, o top y parte de abajo?' -%}{%- assign ob_style_one = 'Una pieza' -%}
+{%- when 'fr' -%}{%- assign ob_q_style = 'Une pièce, ou un haut et un bas ?' -%}{%- assign ob_style_one = 'Une pièce' -%}
+{%- when 'ar' -%}{%- assign ob_q_style = 'قطعة واحدة، أم بلوزة وقطعة سفلية؟' -%}{%- assign ob_style_one = 'قطعة واحدة' -%}
+{%- when 'th' -%}{%- assign ob_q_style = 'อยากได้ชุดชิ้นเดียว หรือเสื้อกับท่อนล่าง?' -%}{%- assign ob_style_one = 'ชุดชิ้นเดียว' -%}
+{%- else -%}{%- assign ob_q_style = 'Are you going for a one-piece, or a top and bottom?' -%}{%- assign ob_style_one = 'One piece' -%}
+{%- endcase -%}
+<section class="ob" id="outfit-builder" aria-live="polite">
+<div class="ob-wrap">
+<header class="ob-head">
+<p class="ob-kicker">{{ 'ob.kicker_html' | t }}</p>
+<h1 class="ob-title">{{ 'ob.title_html' | t }}</h1>
+<p class="ob-sub">{{ 'ob.sub_html' | t }}</p>
+<p class="ob-offer"><span class="ob-offer-badge">{{ 'ob.offer_badge_html' | t }}</span> {{ 'ob.offer_text_html' | t }}</p>
+</header>
+<div class="ob-progress" id="ob-progress" aria-hidden="true"></div>
+<p class="ob-step-label" id="ob-step-label"></p>
+<div id="ob-steps">
+<fieldset class="ob-panel" data-step="occasion">
+<legend class="ob-q">{{ 'ob.q_occasion_html' | t }}</legend>
+<div class="ob-grid" data-field="occasion">
+<button type="button" class="ob-chip" data-value="casual">{{ 'ob.chip_casual_html' | t }}</button>
+<button type="button" class="ob-chip" data-value="brunch">{{ 'ob.chip_brunch_html' | t }}</button>
+<button type="button" class="ob-chip" data-value="dinner">{{ 'ob.chip_dinner_html' | t }}</button>
+<button type="button" class="ob-chip" data-value="clubbing">{{ 'ob.chip_clubbing_html' | t }}</button>
+<button type="button" class="ob-chip" data-value="after-hours">{{ 'ob.chip_after_html' | t }}</button>
+<button type="button" class="ob-chip" data-value="formal">{{ 'ob.chip_formal_html' | t }}</button>
+<button type="button" class="ob-chip" data-value="gala">{{ 'ob.chip_gala_html' | t }}</button>
+<button type="button" class="ob-chip" data-value="gym">{{ 'ob.chip_gym_html' | t }}</button>
+<button type="button" class="ob-chip" data-value="beach">{{ 'ob.chip_beach_html' | t }}</button>
+</div>
+</fieldset>
+<fieldset class="ob-panel" data-step="style" hidden>
+<legend class="ob-q">{{ ob_q_style }}</legend>
+<div class="ob-grid ob-grid-cards" data-field="style">
+<button type="button" class="ob-card" data-value="dress">
+<span class="ob-card-title">{{ ob_style_one }}</span>
+<span class="ob-card-sub">{{ 'ob.style_dress_sub_html' | t }}</span>
+</button>
+<button type="button" class="ob-card" data-value="separates">
+<span class="ob-card-title">{{ 'ob.style_sep_html' | t }}</span>
+<span class="ob-card-sub">{{ 'ob.style_sep_sub_html' | t }}</span>
+</button>
+</div>
+</fieldset>
+<fieldset class="ob-panel" data-step="size" hidden>
+<legend class="ob-q">{{ 'ob.q_sizes_html' | t }}</legend>
+<form class="ob-sizes" id="ob-sizes" novalidate autocomplete="off">
+<div class="ob-sizes-rows" id="ob-sizes-rows"></div>
+<button type="submit" class="ob-sizes-go">{{ 'ob.continue_html' | t }}</button>
+</form>
+<p class="ob-hint">{{ 'ob.size_hint_html' | t }}</p>
+</fieldset>
+<fieldset class="ob-panel" data-step="finish" hidden>
+<legend class="ob-q">{{ 'ob.q_finish_html' | t }}</legend>
+<div class="ob-grid ob-grid-cards" data-field="finish">
+<button type="button" class="ob-card ob-card-visual" data-value="solid">
+<span class="ob-finish-art ob-finish-solid" aria-hidden="true"><i></i><i></i><i></i></span>
+<span class="ob-card-title">{{ 'ob.solids_html' | t }}</span>
+<span class="ob-card-sub" data-count="solid"></span>
+</button>
+<button type="button" class="ob-card ob-card-visual" data-value="print">
+<span class="ob-finish-art ob-finish-print" aria-hidden="true"></span>
+<span class="ob-card-title">{{ 'ob.prints_html' | t }}</span>
+<span class="ob-card-sub" data-count="print"></span>
+</button>
+<button type="button" class="ob-card ob-card-visual" data-value="">
+<span class="ob-finish-art ob-finish-any" aria-hidden="true">?</span>
+<span class="ob-card-title">{{ 'ob.surprise_html' | t }}</span>
+<span class="ob-card-sub">{{ 'ob.surprise_sub_html' | t }}</span>
+</button>
+</div>
+</fieldset>
+<fieldset class="ob-panel" data-step="color" hidden>
+<legend class="ob-q">{{ 'ob.q_color_html' | t }}</legend>
+<p class="ob-hint ob-hint-top">{{ 'ob.color_hint_html' | t }}</p>
+<div class="ob-grid ob-grid-swatches" data-field="color"></div>
+</fieldset>
+<fieldset class="ob-panel" data-step="pattern" hidden>
+<legend class="ob-q">{{ 'ob.q_print_html' | t }}</legend>
+<p class="ob-hint ob-hint-top">{{ 'ob.print_hint_html' | t }}</p>
+<div class="ob-grid ob-grid-swatches" data-field="pattern"></div>
+</fieldset>
+<fieldset class="ob-panel" data-step="pickHero" hidden>
+<legend class="ob-q" id="ob-pickhero-q">{{ 'ob.pick_dress_html' | t }}</legend>
+<p class="ob-hint ob-hint-top" id="ob-pickhero-hint"></p>
+<div class="ob-choices" id="ob-pickhero-grid"></div>
+<p class="ob-choices-more"><button type="button" class="ob-reroll" data-reroll="hero" hidden>&#8635; {{ 'ob.reroll_choices_html' | t }}</button></p>
+</fieldset>
+<fieldset class="ob-panel" data-step="pickBottom" hidden>
+<legend class="ob-q">{{ 'ob.q_bottom_html' | t }}</legend>
+<p class="ob-hint ob-hint-top" id="ob-pickbottom-hint">{{ 'ob.bottom_hint_html' | t }}</p>
+<div class="ob-choices" id="ob-pickbottom-grid"></div>
+<p class="ob-choices-more"><button type="button" class="ob-reroll" data-reroll="bottom" hidden>&#8635; {{ 'ob.reroll_choices_html' | t }}</button></p>
+</fieldset>
+<fieldset class="ob-panel" data-step="shoe" hidden>
+<legend class="ob-q" id="ob-shoe-q">{{ 'ob.q_shoe_html' | t }}</legend>
+<p class="ob-hint ob-hint-top" id="ob-shoe-hint"></p>
+<div class="ob-grid ob-grid-cards" data-field="shoeKind" id="ob-shoe-grid"></div>
+</fieldset>
+</div>
+<div class="ob-nav">
+<button type="button" class="ob-back" id="ob-back" hidden>{{ 'ob.back_html' | t }}</button>
+<button type="button" class="ob-restart" id="ob-restart" hidden>{{ 'ob.restart_html' | t }}</button>
+</div>
+<div class="ob-results" id="ob-results" hidden>
+<div class="ob-res-head">
+<p class="ob-res-kicker">{{ 'ob.kicker_html' | t }}</p>
+<h2 class="ob-results-title">{{ 'ob.your_look_html' | t }}</h2>
+<p class="ob-results-sub" id="ob-results-sub"></p>
+<span class="ob-res-rule" aria-hidden="true"></span>
+<div class="ob-reroll-row">
+<button type="button" class="ob-reroll-ink" id="ob-reroll-outfit" aria-label="{{ 'ob.reroll_all_aria_html' | t }}">{{ 'ob.reroll_all_html' | t }} <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M20 12a8 8 0 0 1-14 5.3M4 12a8 8 0 0 1 14-5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg></button>
+<button type="button" class="ob-reroll-ink ob-reroll-jewel" id="ob-reroll-jewel" aria-label="{{ 'ob.reroll_jewel_aria_html' | t }}">{{ 'ob.reroll_jewel_html' | t }} <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 3h12l3 6-9 12L3 9z"/><path d="M3 9h18M9 3l3 6 3-6M12 9v12"/></svg></button>
+</div>
+<p class="ob-lock-hint">{{ 'ob.lock_hint_a_html' | t }} <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="11" width="14" height="10"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> {{ 'ob.lock_hint_b_html' | t }}</p>
+</div>
+<p class="ob-palette" id="ob-palette"></p>
+<div class="ob-board" id="ob-board">
+<nav class="ob-rail" id="ob-rail" aria-label="{{ 'ob.pieces_nav_html' | t }}"></nav>
+<div class="ob-lay" id="ob-lay"></div>
+<div class="ob-tray" id="ob-tray" aria-live="polite"></div>
+<div class="ob-detail" id="ob-detail" aria-live="polite"></div>
+</div>
+<div class="ob-occ" id="ob-occ"></div>
+<div class="ob-summary" id="ob-summary"></div>
+</div>
+<div class="ob-loading" id="ob-loading" hidden><p>{{ 'ob.loading_html' | t }}</p></div>
+</div>
+</section>
+{%- render 'post-add-modal' -%}
+<script src="{{ 'outfit-builder-engine.js' | asset_url }}" defer></script>
+<script type="application/json" id="ob-i18n">{
+"kicker": {{ 'ob.kicker_html' | t | json }},
+"title": {{ 'ob.title_html' | t | json }},
+"sub": {{ 'ob.sub_html' | t | json }},
+"offer_badge": {{ 'ob.offer_badge_html' | t | json }},
+"offer_text": {{ 'ob.offer_text_html' | t | json }},
+"q_occasion": {{ 'ob.q_occasion_html' | t | json }},
+"chip_casual": {{ 'ob.chip_casual_html' | t | json }},
+"chip_brunch": {{ 'ob.chip_brunch_html' | t | json }},
+"chip_dinner": {{ 'ob.chip_dinner_html' | t | json }},
+"chip_clubbing": {{ 'ob.chip_clubbing_html' | t | json }},
+"chip_after": {{ 'ob.chip_after_html' | t | json }},
+"chip_formal": {{ 'ob.chip_formal_html' | t | json }},
+"chip_gala": {{ 'ob.chip_gala_html' | t | json }},
+"chip_gym": {{ 'ob.chip_gym_html' | t | json }},
+"chip_vacation": {{ 'ob.chip_vacation_html' | t | json }},
+"chip_beach": {{ 'ob.chip_beach_html' | t | json }},
+"q_style": {{ ob_q_style | json }},
+"style_dress": {{ ob_style_one | json }},
+"style_dress_sub": {{ 'ob.style_dress_sub_html' | t | json }},
+"style_sep": {{ 'ob.style_sep_html' | t | json }},
+"style_sep_sub": {{ 'ob.style_sep_sub_html' | t | json }},
+"q_sizes": {{ 'ob.q_sizes_html' | t | json }},
+"continue": {{ 'ob.continue_html' | t | json }},
+"size_hint": {{ 'ob.size_hint_html' | t | json }},
+"q_finish": {{ 'ob.q_finish_html' | t | json }},
+"solids": {{ 'ob.solids_html' | t | json }},
+"prints": {{ 'ob.prints_html' | t | json }},
+"surprise": {{ 'ob.surprise_html' | t | json }},
+"surprise_sub": {{ 'ob.surprise_sub_html' | t | json }},
+"q_color": {{ 'ob.q_color_html' | t | json }},
+"color_hint": {{ 'ob.color_hint_html' | t | json }},
+"q_print": {{ 'ob.q_print_html' | t | json }},
+"print_hint": {{ 'ob.print_hint_html' | t | json }},
+"reroll_choices": {{ 'ob.reroll_choices_html' | t | json }},
+"q_bottom": {{ 'ob.q_bottom_html' | t | json }},
+"bottom_hint": {{ 'ob.bottom_hint_html' | t | json }},
+"q_shoe": {{ 'ob.q_shoe_html' | t | json }},
+"back": {{ 'ob.back_html' | t | json }},
+"restart": {{ 'ob.restart_html' | t | json }},
+"your_look": {{ 'ob.your_look_html' | t | json }},
+"reroll_all": {{ 'ob.reroll_all_html' | t | json }},
+"reroll_all_aria": {{ 'ob.reroll_all_aria_html' | t | json }},
+"reroll_jewel": {{ 'ob.reroll_jewel_html' | t | json }},
+"reroll_jewel_aria": {{ 'ob.reroll_jewel_aria_html' | t | json }},
+"lock_hint_a": {{ 'ob.lock_hint_a_html' | t | json }},
+"lock_hint_b": {{ 'ob.lock_hint_b_html' | t | json }},
+"pieces_nav": {{ 'ob.pieces_nav_html' | t | json }},
+"loading": {{ 'ob.loading_html' | t | json }},
+"load_error": {{ 'ob.load_error_html' | t | json }},
+"try_again": {{ 'ob.try_again_html' | t | json }},
+"lbl_top": {{ 'ob.lbl_top_html' | t | json }},
+"lbl_bottom": {{ 'ob.lbl_bottom_html' | t | json }},
+"lbl_look": {{ 'ob.lbl_look_html' | t | json }},
+"lbl_shoes": {{ 'ob.lbl_shoes_html' | t | json }},
+"lbl_bag": {{ 'ob.lbl_bag_html' | t | json }},
+"lbl_neck": {{ 'ob.lbl_neck_html' | t | json }},
+"lbl_wrist": {{ 'ob.lbl_wrist_html' | t | json }},
+"lbl_ring": {{ 'ob.lbl_ring_html' | t | json }},
+"lbl_accessory": {{ 'ob.lbl_accessory_html' | t | json }},
+"lbl_waist": {{ 'ob.lbl_waist_html' | t | json }},
+"tray_top": {{ 'ob.tray_top_html' | t | json }},
+"tray_bottom": {{ 'ob.tray_bottom_html' | t | json }},
+"tray_look": {{ 'ob.tray_look_html' | t | json }},
+"tray_bag": {{ 'ob.tray_bag_html' | t | json }},
+"tray_neck": {{ 'ob.tray_neck_html' | t | json }},
+"tray_wrist": {{ 'ob.tray_wrist_html' | t | json }},
+"tray_ring": {{ 'ob.tray_ring_html' | t | json }},
+"tray_accessory": {{ 'ob.tray_accessory_html' | t | json }},
+"tray_waist": {{ 'ob.tray_waist_html' | t | json }},
+"occ_casual": {{ 'ob.occ_casual_html' | t | json }},
+"occ_brunch": {{ 'ob.occ_brunch_html' | t | json }},
+"occ_dinner": {{ 'ob.occ_dinner_html' | t | json }},
+"occ_clubbing": {{ 'ob.occ_clubbing_html' | t | json }},
+"occ_after": {{ 'ob.occ_after_html' | t | json }},
+"occ_formal": {{ 'ob.occ_formal_html' | t | json }},
+"occ_gala": {{ 'ob.occ_gala_html' | t | json }},
+"occ_gym": {{ 'ob.occ_gym_html' | t | json }},
+"occ_vacation": {{ 'ob.occ_vacation_html' | t | json }},
+"occ_beach": {{ 'ob.occ_beach_html' | t | json }},
+"change_occasion": {{ 'ob.change_occasion_html' | t | json }},
+"step_of": {{ 'ob.step_of_html' | t | json }},
+"shoe_heels": {{ 'ob.shoe_heels_html' | t | json }},
+"shoe_flats": {{ 'ob.shoe_flats_html' | t | json }},
+"shoe_sneakers": {{ 'ob.shoe_sneakers_html' | t | json }},
+"shoe_sandals": {{ 'ob.shoe_sandals_html' | t | json }},
+"shoe_boots": {{ 'ob.shoe_boots_html' | t | json }},
+"shoesub_heels": {{ 'ob.shoesub_heels_html' | t | json }},
+"shoesub_flats": {{ 'ob.shoesub_flats_html' | t | json }},
+"shoesub_sneakers": {{ 'ob.shoesub_sneakers_html' | t | json }},
+"shoesub_sandals": {{ 'ob.shoesub_sandals_html' | t | json }},
+"shoesub_boots": {{ 'ob.shoesub_boots_html' | t | json }},
+"shoeq_gym": {{ 'ob.shoeq_gym_html' | t | json }},
+"shoeq_beach": {{ 'ob.shoeq_beach_html' | t | json }},
+"shoeq_dressy": {{ 'ob.shoeq_dressy_html' | t | json }},
+"shoe_hint": {{ 'ob.shoe_hint_html' | t | json }},
+"shoe_hint_size": {{ 'ob.shoe_hint_size_html' | t | json }},
+"in_stock": {{ 'ob.in_stock_html' | t | json }},
+"best_match": {{ 'ob.best_match_html' | t | json }},
+"tag_sep": {{ 'ob.tag_sep_html' | t | json }},
+"tag_dress": {{ 'ob.tag_dress_html' | t | json }},
+"from_price": {{ 'ob.from_price_html' | t | json }},
+"pick_top": {{ 'ob.pick_top_html' | t | json }},
+"pick_dress": {{ 'ob.pick_dress_html' | t | json }},
+"hero_top": {{ 'ob.hero_top_html' | t | json }},
+"hero_top_size": {{ 'ob.hero_top_size_html' | t | json }},
+"hero_dress": {{ 'ob.hero_dress_html' | t | json }},
+"hero_dress_size": {{ 'ob.hero_dress_size_html' | t | json }},
+"hero_top_0": {{ 'ob.hero_top_0_html' | t | json }},
+"hero_top_1": {{ 'ob.hero_top_1_html' | t | json }},
+"hero_top_2": {{ 'ob.hero_top_2_html' | t | json }},
+"hero_top_3": {{ 'ob.hero_top_3_html' | t | json }},
+"hero_dress_0": {{ 'ob.hero_dress_0_html' | t | json }},
+"hero_dress_1": {{ 'ob.hero_dress_1_html' | t | json }},
+"hero_dress_2": {{ 'ob.hero_dress_2_html' | t | json }},
+"hero_dress_3": {{ 'ob.hero_dress_3_html' | t | json }},
+"hero_in_size": {{ 'ob.hero_in_size_html' | t | json }},
+"bottom_hint_0": {{ 'ob.bottom_hint_0_html' | t | json }},
+"bottom_hint_1": {{ 'ob.bottom_hint_1_html' | t | json }},
+"bottom_hint_2": {{ 'ob.bottom_hint_2_html' | t | json }},
+"partial_note": {{ 'ob.partial_note_html' | t | json }},
+"no_photo": {{ 'ob.no_photo_html' | t | json }},
+"in_stock_1": {{ 'ob.in_stock_1_html' | t | json }},
+"size_top": {{ 'ob.size_top_html' | t | json }},
+"size_bottom": {{ 'ob.size_bottom_html' | t | json }},
+"size_shoe": {{ 'ob.size_shoe_html' | t | json }},
+"size_dress": {{ 'ob.size_dress_html' | t | json }},
+"size_system": {{ 'ob.size_system_html' | t | json }},
+"sys_us": {{ 'ob.sys_us_html' | t | json }},
+"sys_intl": {{ 'ob.sys_intl_html' | t | json }},
+"not_sure": {{ 'ob.not_sure_html' | t | json }},
+"none_in_stock": {{ 'ob.none_in_stock_html' | t | json }},
+"built_for": {{ 'ob.built_for_html' | t | json }},
+"size_list": {{ 'ob.size_list_html' | t | json }},
+"swap_to_sep": {{ 'ob.swap_to_sep_html' | t | json }},
+"swap_to_dress": {{ 'ob.swap_to_dress_html' | t | json }},
+"no_other": {{ 'ob.no_other_html' | t | json }},
+"matched": {{ 'ob.matched_html' | t | json }},
+"and": {{ 'ob.and_html' | t | json }},
+"contrast_look": {{ 'ob.contrast_look_html' | t | json }},
+"contrast_top": {{ 'ob.contrast_top_html' | t | json }},
+"contrast_part": {{ 'ob.contrast_part_html' | t | json }},
+"belt_or_sash": {{ 'ob.belt_or_sash_html' | t | json }},
+"print_word": {{ 'ob.print_word_html' | t | json }},
+"one_option": {{ 'ob.one_option_html' | t | json }},
+"lbl_color": {{ 'ob.lbl_color_html' | t | json }},
+"lbl_size": {{ 'ob.lbl_size_html' | t | json }},
+"lbl_color_size": {{ 'ob.lbl_color_size_html' | t | json }},
+"lbl_color_shoe": {{ 'ob.lbl_color_shoe_html' | t | json }},
+"choose": {{ 'ob.choose_html' | t | json }},
+"choose_to_add": {{ 'ob.choose_to_add_html' | t | json }},
+"nothing_in_stock": {{ 'ob.nothing_in_stock_html' | t | json }},
+"left_out": {{ 'ob.left_out_html' | t | json }},
+"no_belt": {{ 'ob.no_belt_html' | t | json }},
+"nothing_yet": {{ 'ob.nothing_yet_html' | t | json }},
+"more_soon": {{ 'ob.more_soon_html' | t | json }},
+"add_a": {{ 'ob.add_a_html' | t | json }},
+"selected": {{ 'ob.selected_html' | t | json }},
+"lock_x": {{ 'ob.lock_x_html' | t | json }},
+"unlock_x": {{ 'ob.unlock_x_html' | t | json }},
+"show_another": {{ 'ob.show_another_html' | t | json }},
+"colors_of": {{ 'ob.colors_of_html' | t | json }},
+"optional": {{ 'ob.optional_html' | t | json }},
+"pick_one": {{ 'ob.pick_one_html' | t | json }},
+"nothing_for_this": {{ 'ob.nothing_for_this_html' | t | json }},
+"more_options": {{ 'ob.more_options_html' | t | json }},
+"always_included": {{ 'ob.always_included_html' | t | json }},
+"in_my_outfit": {{ 'ob.in_my_outfit_html' | t | json }},
+"added_check": {{ 'ob.added_check_html' | t | json }},
+"add_to_bag_price": {{ 'ob.add_to_bag_price_html' | t | json }},
+"view_details": {{ 'ob.view_details_html' | t | json }},
+"swap_it_for": {{ 'ob.swap_it_for_html' | t | json }},
+"all_pieces": {{ 'ob.all_pieces_html' | t | json }},
+"to_choose_from": {{ 'ob.to_choose_from_html' | t | json }},
+"selected_x": {{ 'ob.selected_x_html' | t | json }},
+"swap_in_x": {{ 'ob.swap_in_x_html' | t | json }},
+"unavailable": {{ 'ob.unavailable_html' | t | json }},
+"tap_to_add_back": {{ 'ob.tap_to_add_back_html' | t | json }},
+"sum_q": {{ 'ob.sum_q_html' | t | json }},
+"sum_next": {{ 'ob.sum_next_html' | t | json }},
+"sum_nq1": {{ 'ob.sum_nq1_html' | t | json }},
+"sum_nqn": {{ 'ob.sum_nqn_html' | t | json }},
+"cta_pick": {{ 'ob.cta_pick_html' | t | json }},
+"noun_top": {{ 'ob.noun_top_html' | t | json }},
+"noun_bottom": {{ 'ob.noun_bottom_html' | t | json }},
+"noun_dress": {{ 'ob.noun_dress_html' | t | json }},
+"noun_shoe": {{ 'ob.noun_shoe_html' | t | json }},
+"noun_purse": {{ 'ob.noun_purse_html' | t | json }},
+"noun_necklace": {{ 'ob.noun_necklace_html' | t | json }},
+"noun_bracelet": {{ 'ob.noun_bracelet_html' | t | json }},
+"noun_ring": {{ 'ob.noun_ring_html' | t | json }},
+"noun_accessory": {{ 'ob.noun_accessory_html' | t | json }},
+"noun_belt": {{ 'ob.noun_belt_html' | t | json }},
+"noun_piece": {{ 'ob.noun_piece_html' | t | json }},
+"adding": {{ 'ob.adding_html' | t | json }},
+"add_look": {{ 'ob.add_look_html' | t | json }},
+"est": {{ 'ob.est_html' | t | json }},
+"discount_fine": {{ 'ob.discount_fine_html' | t | json }},
+"err_add_bag": {{ 'ob.err_add_bag_html' | t | json }},
+"pieces_added": {{ 'ob.pieces_added_html' | t | json }},
+"outfit_added": {{ 'ob.outfit_added_html' | t | json }},
+"err_outfit": {{ 'ob.err_outfit_html' | t | json }},
+"err_outfit_tip": {{ 'ob.err_outfit_tip_html' | t | json }},
+"piece_added": {{ 'ob.piece_added_html' | t | json }},
+"title_added": {{ 'ob.title_added_html' | t | json }},
+"err_piece": {{ 'ob.err_piece_html' | t | json }},
+"err_piece_tip": {{ 'ob.err_piece_tip_html' | t | json }},
+"add_to_outfit": {{ 'ob.add_to_outfit_html' | t | json }},
+"shoe_size_sys": {{ 'ob.shoe_size_sys_html' | t | json }},
+"choose_one": {{ 'ob.choose_one_html' | t | json }},
+"not_in_color": {{ 'ob.not_in_color_html' | t | json }},
+"piece_left_out": {{ 'ob.piece_left_out_html' | t | json }},
+"choose_to_add_piece": {{ 'ob.choose_to_add_piece_html' | t | json }},
+"locked_suffix": {{ 'ob.locked_suffix_html' | t | json }},
+"close_back": {{ 'ob.close_back_html' | t | json }},
+"photos_of": {{ 'ob.photos_of_html' | t | json }},
+"photo_n": {{ 'ob.photo_n_html' | t | json }},
+"prev_photo": {{ 'ob.prev_photo_html' | t | json }},
+"next_photo": {{ 'ob.next_photo_html' | t | json }},
+"put_back": {{ 'ob.put_back_html' | t | json }},
+"unlock_to_change": {{ 'ob.unlock_to_change_html' | t | json }},
+"show_me_another": {{ 'ob.show_me_another_html' | t | json }},
+"locked": {{ 'ob.locked_html' | t | json }},
+"lock_this": {{ 'ob.lock_this_html' | t | json }},
+"view_full": {{ 'ob.view_full_html' | t | json }},
+"back_to_builder": {{ 'ob.back_to_builder_html' | t | json }},
+"pair_look": {{ 'ob.pair_look_html' | t | json }},
+"pair_top": {{ 'ob.pair_top_html' | t | json }},
+"belt_match": {{ 'ob.belt_match_html' | t | json }},
+"no_loops": {{ 'ob.no_loops_html' | t | json }},
+"note_color": {{ 'ob.note_color_html' | t | json }},
+"note_size": {{ 'ob.note_size_html' | t | json }},
+"note_occasion": {{ 'ob.note_occasion_html' | t | json }},
+"note_none": {{ 'ob.note_none_html' | t | json }},
+"fam_black": {{ 'ob.fam_black_html' | t | json }},
+"fam_white": {{ 'ob.fam_white_html' | t | json }},
+"fam_neutral": {{ 'ob.fam_neutral_html' | t | json }},
+"fam_brown": {{ 'ob.fam_brown_html' | t | json }},
+"fam_gray": {{ 'ob.fam_gray_html' | t | json }},
+"fam_red": {{ 'ob.fam_red_html' | t | json }},
+"fam_pink": {{ 'ob.fam_pink_html' | t | json }},
+"fam_orange": {{ 'ob.fam_orange_html' | t | json }},
+"fam_yellow": {{ 'ob.fam_yellow_html' | t | json }},
+"fam_green": {{ 'ob.fam_green_html' | t | json }},
+"fam_blue": {{ 'ob.fam_blue_html' | t | json }},
+"fam_purple": {{ 'ob.fam_purple_html' | t | json }},
+"fam_metallic": {{ 'ob.fam_metallic_html' | t | json }},
+"pat_floral": {{ 'ob.pat_floral_html' | t | json }},
+"pat_animal": {{ 'ob.pat_animal_html' | t | json }},
+"pat_stripes": {{ 'ob.pat_stripes_html' | t | json }},
+"pat_tropical": {{ 'ob.pat_tropical_html' | t | json }},
+"pat_geometric": {{ 'ob.pat_geometric_html' | t | json }},
+"pat_print": {{ 'ob.pat_print_html' | t | json }}
+}</script>
+<script>
+{%- render 'ob-quiz-js1' -%}
+{%- render 'ob-quiz-js2' -%}
+{%- render 'ob-quiz-js3' -%}
+{%- render 'ob-quiz-js4' -%}
+</script>
+<style>
+{%- render 'ob-quiz-css1' -%}
+{%- render 'ob-quiz-css2' -%}
+</style>
+
