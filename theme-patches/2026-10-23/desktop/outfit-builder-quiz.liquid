@@ -1,0 +1,51 @@
+{%- comment -%}
+  Outfit Builder quiz, patched at render time (2026-10-11). The original section lives untouched in snippets/ob-quiz-src.liquid;
+  this file renders it and applies small exact-text patches (Liquid replace) for the new "Other accessories" slot.
+  If a patch stops matching (the source changed) the slot simply doesn't appear; nothing else breaks.
+  2026-10-12: Spanish storefront (request.locale starts with "es"): the slot strings and the few strings the source still hard-codes
+  in English are swapped for Spanish here. French gets the slot strings. English output is unchanged.
+{%- endcomment -%}
+{%- assign ob_lang = request.locale.iso_code | slice: 0, 2 -%}
+{%- capture ob_src -%}{%- render 'ob-quiz-src' -%}{%- endcapture -%}
+{% capture ob_a0 %}{% raw %}waist: tx('lbl_waist') };{% endraw %}{% endcapture %}{% capture ob_b0 %}{% raw %}waist: tx('lbl_waist'), extra: 'Other accessories' };{% endraw %}{% endcapture %}
+{% capture ob_a1 %}{% raw %}waist: tx('tray_waist') };{% endraw %}{% endcapture %}{% capture ob_b1 %}{% raw %}waist: tx('tray_waist'), extra: 'other accessories' };{% endraw %}{% endcapture %}
+{% capture ob_a2 %}{% raw %}ob-map-side">' + tileHtml('wrist2', 't-sq'){% endraw %}{% endcapture %}{% capture ob_b2 %}{% raw %}ob-map-side">' + tileHtml('extra', 't-sq') + tileHtml('wrist2', 't-sq'){% endraw %}{% endcapture %}
+{% capture ob_a7 %}{% raw %}ob-map-side">' + tileHtml('wrist', 't-sq'){% endraw %}{% endcapture %}{% capture ob_b7 %}{% raw %}ob-map-side">' + tileHtml('neck', 't-neck') + tileHtml('wrist', 't-sq'){% endraw %}{% endcapture %}
+{% capture ob_a8 %}{% raw %}ob-map-mid">' + tileHtml('neck', 't-neck') +{% endraw %}{% endcapture %}{% capture ob_b8 %}{% raw %}ob-map-mid">' +{% endraw %}{% endcapture %}
+{% capture ob_a3 %}{% raw %}accessory: 'noun_accessory',{% endraw %}{% endcapture %}{% capture ob_b3 %}{% raw %}accessory: 'noun_accessory', extra: 'noun_accessory',{% endraw %}{% endcapture %}
+{% capture ob_a4 %}{% raw %}tx('add_a', { x: lc(label) }){% endraw %}{% endcapture %}{% capture ob_b4 %}{% raw %}(b === 'extra' ? 'Add a head or shoulder piece' : tx('add_a', { x: lc(label) })){% endraw %}{% endcapture %}
+{% capture ob_a5 %}{% raw %}tx('add_a', { x: lc(LABELS[b]) }){% endraw %}{% endcapture %}{% capture ob_b5 %}{% raw %}(b === 'extra' ? 'Add a head or shoulder piece' : tx('add_a', { x: lc(LABELS[b]) })){% endraw %}{% endcapture %}
+{% capture ob_a6 %}{% raw %}if (bucket === 'shoes' || bucket === 'waist' ||{% endraw %}{% endcapture %}{% capture ob_b6 %}{% raw %}if (bucket === 'shoes' || bucket === 'waist' || bucket === 'extra' ||{% endraw %}{% endcapture %}
+{%- if ob_lang == 'es' -%}
+{% capture ob_b0 %}{% raw %}waist: tx('lbl_waist'), extra: 'Otros accesorios' };{% endraw %}{% endcapture %}
+{% capture ob_b1 %}{% raw %}waist: tx('tray_waist'), extra: 'otros accesorios' };{% endraw %}{% endcapture %}
+{% capture ob_b4 %}{% raw %}(b === 'extra' ? 'Agrega una pieza para cabeza u hombros' : tx('add_a', { x: lc(label) })){% endraw %}{% endcapture %}
+{% capture ob_b5 %}{% raw %}(b === 'extra' ? 'Agrega una pieza para cabeza u hombros' : tx('add_a', { x: lc(LABELS[b]) })){% endraw %}{% endcapture %}
+{% capture ob_a9 %}{% raw %}<b>Any color</b><small>Best piece in stock</small>{% endraw %}{% endcapture %}{% capture ob_b9 %}{% raw %}<b>Cualquier color</b><small>La mejor pieza disponible</small>{% endraw %}{% endcapture %}
+{% capture ob_a10 %}{% raw %}<b>Any print</b><small>Best print in stock</small>{% endraw %}{% endcapture %}{% capture ob_b10 %}{% raw %}<b>Cualquier estampado</b><small>El mejor estampado disponible</small>{% endraw %}{% endcapture %}
+{% capture ob_a11 %}{% raw %}Finding pieces that go with your look…{% endraw %}{% endcapture %}{% capture ob_b11 %}{% raw %}Buscando piezas que combinen con tu look…{% endraw %}{% endcapture %}
+{% capture ob_a12 %}{% raw %}'Nothing in stock for this occasion yet.': 'note_none' };{% endraw %}{% endcapture %}{% capture ob_b12 %}{% raw %}'Nothing in stock for this occasion yet.': 'note_none', 'Nothing in stock for this yet.': 'nothing_for_this' };{% endraw %}{% endcapture %}
+{% capture ob_a13 %}{% raw %}return 'Waist ' + t;{% endraw %}{% endcapture %}{% capture ob_b13 %}{% raw %}return 'Cintura ' + t;{% endraw %}{% endcapture %}
+{% capture ob_a14 %}{% raw %}' juniors' : t + ' (juniors)'{% endraw %}{% endcapture %}{% capture ob_b14 %}{% raw %}' juvenil' : t + ' (juvenil)'{% endraw %}{% endcapture %}
+{% capture ob_a15 %}{% raw %}' plus' : t + ' (plus)'{% endraw %}{% endcapture %}{% capture ob_b15 %}{% raw %}' talla grande' : t + ' (talla grande)'{% endraw %}{% endcapture %}
+{% capture ob_a16 %}{% raw %}.replace('shoe size', 'size').replace(' and ', ' & '){% endraw %}{% endcapture %}{% capture ob_b16 %}{% raw %}.replace('talla de zapato', 'talla'){% endraw %}{% endcapture %}
+{{ ob_src | replace: ob_a0, ob_b0 | replace: ob_a1, ob_b1 | replace: ob_a2, ob_b2 | replace: ob_a3, ob_b3 | replace: ob_a4, ob_b4 | replace: ob_a5, ob_b5 | replace: ob_a6, ob_b6 | replace: ob_a7, ob_b7 | replace: ob_a8, ob_b8 | replace: ob_a9, ob_b9 | replace: ob_a10, ob_b10 | replace: ob_a11, ob_b11 | replace: ob_a12, ob_b12 | replace: ob_a13, ob_b13 | replace: ob_a14, ob_b14 | replace: ob_a15, ob_b15 | replace: ob_a16, ob_b16 }}
+{%- else -%}
+{%- if ob_lang == 'fr' -%}
+{% capture ob_b0 %}{% raw %}waist: tx('lbl_waist'), extra: 'Autres accessoires' };{% endraw %}{% endcapture %}
+{% capture ob_b1 %}{% raw %}waist: tx('tray_waist'), extra: 'autres accessoires' };{% endraw %}{% endcapture %}
+{% capture ob_b4 %}{% raw %}(b === 'extra' ? 'Ajouter une pièce pour la tête ou les épaules' : tx('add_a', { x: lc(label) })){% endraw %}{% endcapture %}
+{% capture ob_b5 %}{% raw %}(b === 'extra' ? 'Ajouter une pièce pour la tête ou les épaules' : tx('add_a', { x: lc(LABELS[b]) })){% endraw %}{% endcapture %}
+{%- elsif ob_lang == 'ar' -%}
+{% capture ob_b0 %}{% raw %}waist: tx('lbl_waist'), extra: 'إكسسوارات أخرى' };{% endraw %}{% endcapture %}
+{% capture ob_b1 %}{% raw %}waist: tx('tray_waist'), extra: 'إكسسوارات أخرى' };{% endraw %}{% endcapture %}
+{% capture ob_b4 %}{% raw %}(b === 'extra' ? 'أضيفي قطعة للرأس أو الكتفين' : tx('add_a', { x: lc(label) })){% endraw %}{% endcapture %}
+{% capture ob_b5 %}{% raw %}(b === 'extra' ? 'أضيفي قطعة للرأس أو الكتفين' : tx('add_a', { x: lc(LABELS[b]) })){% endraw %}{% endcapture %}
+{%- elsif ob_lang == 'th' -%}
+{% capture ob_b0 %}{% raw %}waist: tx('lbl_waist'), extra: 'อุปกรณ์เสริมอื่นๆ' };{% endraw %}{% endcapture %}
+{% capture ob_b1 %}{% raw %}waist: tx('tray_waist'), extra: 'อุปกรณ์เสริมอื่นๆ' };{% endraw %}{% endcapture %}
+{% capture ob_b4 %}{% raw %}(b === 'extra' ? 'เพิ่มชิ้นสำหรับศีรษะหรือไหล่' : tx('add_a', { x: lc(label) })){% endraw %}{% endcapture %}
+{% capture ob_b5 %}{% raw %}(b === 'extra' ? 'เพิ่มชิ้นสำหรับศีรษะหรือไหล่' : tx('add_a', { x: lc(LABELS[b]) })){% endraw %}{% endcapture %}
+{%- endif -%}
+{{ ob_src | replace: ob_a0, ob_b0 | replace: ob_a1, ob_b1 | replace: ob_a2, ob_b2 | replace: ob_a3, ob_b3 | replace: ob_a4, ob_b4 | replace: ob_a5, ob_b5 | replace: ob_a6, ob_b6 | replace: ob_a7, ob_b7 | replace: ob_a8, ob_b8 }}
+{%- endif -%}
