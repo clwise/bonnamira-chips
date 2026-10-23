@@ -24,6 +24,9 @@
 
   /* Staff picks: full width, three generous cards */
   #outfit-builder .obf { margin-bottom: 36px; }
+  #outfit-builder .obf-head { text-align: start; }
+  #outfit-builder .obf-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; overflow: visible; }
+  #outfit-builder .obf-card { flex: none; width: auto; max-width: none; }
 
   /* ---------- Questions: wide, left aligned ---------- */
   #outfit-builder .ob-step-label { text-align: start; margin: 0 0 6px; }
@@ -38,7 +41,7 @@
   #outfit-builder [data-step="occasion"] .ob-chip .ob-oi svg { width: 100%; height: 100%; }
 
   /* Size: two columns, form no longer a thin strip */
-  #outfit-builder .ob-sizes { max-width: 760px; width: 100%; }
+  #outfit-builder .ob-sizes { max-width: 760px !important; width: 100%; margin-inline: 0 !important; }
   #outfit-builder .ob-sizes-rows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 28px; }
   #outfit-builder .ob-sizes-rows > .ob-size-sys { grid-column: 1 / -1; }
   #outfit-builder .ob-sizes-go { max-width: 320px; }
@@ -46,11 +49,13 @@
   /* Pickers (dress, top, bottom): cards use the full width */
   #outfit-builder .ob-filters { gap: 12px; }
   #outfit-builder .ob-fseg { max-width: 460px; }
+  #outfit-builder .ob-choices, #outfit-builder .ob-choices-slider { max-width: 1120px !important; width: 100% !important; margin-inline: 0 !important; }
   #outfit-builder .ob-choices-slider .ob-track { gap: 20px; }
 
   /* Shoes: 4 across, "Surprise me" on its own full row */
-  #outfit-builder #ob-shoe-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
-  #outfit-builder #ob-shoe-grid .ob-card-surprise { grid-column: 1 / -1; }
+  #outfit-builder #ob-shoe-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: 18px !important; max-width: 1240px !important; }
+  #outfit-builder #ob-shoe-grid .ob-card-shoe { width: 100% !important; max-width: none !important; }
+  #outfit-builder #ob-shoe-grid .ob-card-surprise { grid-column: 1 / -1 !important; width: 100% !important; max-width: none !important; }
 
   /* Back / start over */
   #outfit-builder .ob-nav { justify-content: flex-start; gap: 20px; }
@@ -58,13 +63,12 @@
   /* ---------- Results: centred body map beside the item panel ---------- */
   #outfit-builder .ob-results { max-width: none; }
   #outfit-builder .ob-res-head { padding-top: 8px; }
-  #outfit-builder .ob-board { grid-template-columns: minmax(0, 1fr) 360px; column-gap: 40px; align-items: start; }
-  #outfit-builder .ob-lay { width: 100%; max-width: 980px; margin-inline: auto; }
-  #outfit-builder .ob-map { width: 100%; grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr) minmax(0, 1fr); gap: 14px; }
-  #outfit-builder .ob-map-mid { width: auto; }
-  #outfit-builder .ob-detail { position: sticky; top: 96px; align-self: start; max-height: calc(100dvh - 120px); overflow-y: auto; }
-  #outfit-builder .ob-summary { max-width: 980px; margin-inline: auto; }
-  #outfit-builder .ob-obj, #outfit-builder .obj { max-width: 980px; margin-inline: auto; }
+  /* (the item panel is a dialog, so the board is a single centred column) */
+  #outfit-builder .ob-board { grid-template-columns: minmax(0, 1fr) !important; }
+  #outfit-builder .ob-lay { width: 100% !important; max-width: 1000px !important; margin-inline: auto !important; }
+  #outfit-builder .ob-map { width: 100% !important; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1fr) !important; gap: 14px; }
+  #outfit-builder .ob-map-mid { width: auto !important; }
+  #outfit-builder .ob-summary, #outfit-builder .obj { max-width: 1000px; margin-inline: auto; }
 
   /* ---------- Colour / print dialog: wide centred dialog, 7 colours across, shade panel on the side ---------- */
   .obc { align-items: center !important; padding: 28px !important; }
@@ -92,6 +96,20 @@
   #outfit-builder .ob-wrap { max-width: 1440px; }
 }
 </style>
+<script>
+/* Desktop only: on the "too much of" screen, hide colour families with nothing in stock (the first screen already does) */
+(function () {
+  var mq = window.matchMedia('(min-width: 1024px)'), body = document.getElementById('obc-body');
+  if (!body) return;
+  function tidy() {
+    if (!mq.matches) return;
+    Array.prototype.forEach.call(body.querySelectorAll('[data-too] small'), function (s) {
+      if (/^\s*0(\D|$)/.test(s.textContent)) s.parentNode.style.display = 'none';
+    });
+  }
+  new MutationObserver(tidy).observe(body, { childList: true });
+})();
+</script>
 {% schema %}
 { "name": "Builder desktop layer", "settings": [] }
 {% endschema %}
